@@ -16,6 +16,9 @@ setuptools.setup(
 	long_description_content_type = "text/markdown",
 	url                           = "https://github.com/riscure/python-trsfile",
 	packages                      = setuptools.find_packages(),
+	install_requires=[
+		'numpy',
+	],
 	license                       = "BSD 3-Clause Clear License",
 	keywords                      = "trs trace inspector riscure",
 	classifiers                   = (
