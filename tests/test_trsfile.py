@@ -3,12 +3,12 @@ import trsfile
 import os
 import binascii
 import numpy
-from pathlib import Path
+from os.path import dirname, abspath
 from trsfile import TrsFile, Header, SampleCoding
 
 class TestTrsFile(unittest.TestCase):
 	def setUp(self):
-		self.trs_file = trsfile.open(Path(__file__).parent / 'data' / '90x500xfloat.trs')
+		self.trs_file = trsfile.open(dirname(abspath(__file__)) + '/data/90x500xfloat.trs')
 
 	def tearDown(self):
 		self.trs_file.close()

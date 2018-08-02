@@ -7,7 +7,7 @@ class Trace:
 	Single trace
 	"""
 
-	def __init__(self, sample_coding : SampleCoding, samples, data = b'', title = 'trace', headers = {}):
+	def __init__(self, sample_coding, samples, data = b'', title = 'trace', headers = {}):
 		self.title = title
 		self.data = data if data is not None else b''
 		self.samples = samples
