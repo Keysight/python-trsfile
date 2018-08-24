@@ -1,20 +1,25 @@
 language: python
 python:
+  - '3.4'
+  - '3.5'
   - '3.6'
+
 install:
-  - pip install --only-binary=numpy
+  - pip install -r requirements.txt
+
+script:
+  - python -m unittest
 
 jobs:
   fast_finish: true
   include:
   - stage: deploy
-    script: echo "Deploying to PyPI..."
+    if: tag IS present AND branch = master
+    name: Deploy to PyPI
+    python: '3.6'
     deploy:
       provider: pypi
       user: riscure
       password:
         secure: slvfH457ETn60MtvxLpIIicpzC8RrHmMHpwo8MWH9s93DxZhEyBWKr6jVOaJd5ZlO0fRL2hfhFA1RPqg+IB/84cPwXBmJ2n7c3Wfx/ORu9cRwXqC9W8pnthUpRd8sw8BD+HCg4YY3EkWvU/NRfKGejd69p6PbyzAWpwAZlXMeQsmHyuuVfNrTm4sXK6p28OOD3/FGPfGW7PoytQeg7M0f0JbhLTMlLcV/97hjLTPsPmhFwhi+Q7qZ5eptpFpWsGuCDKs8kI87t+4cSgMPdO5nPPb+UA5BmoAM7II7Nl0EZiSYsRFUggr4LxchtUPd4DziAC7Kymk/aRinVkny1LR8WNqNwidwoGifYiudE11S/rdGTjMER+72M0QVc4aTwkVgpcH8iChQYG4jYmndFdSCstSMl9MaWURX1z64aEw1Rm0Tda9vNhbHn6SH7EagryffG7agO9jReusA7z9kxWL20H9rcDFzAeG/kaB16lFurXH31VXqfO86KkrQFR639VMtYGN/ouXY03bhXW22HzECBWs7xyCGvsj754+jcyZFzNVSsaCHD+D285JkUvpJXBAy8TCWpi+nKFev3DXU3+fJDDcXJNALfUBgMKe+LNHYbOF6074p9FPWHvqWAnlJ+Gu42wES7UGwqw9p8R2+H8+jqLJ+VimeIS0pZY5bfstHms=
       distributions: sdist bdist_wheel
-      on:
-        tags: true
-        branch: master
