@@ -1,4 +1,7 @@
 # Inspector Trace Set `.trs` file support in Python
+[![Build Status](https://travis-ci.org/Riscure/python-trsfile.svg?branch=master)](https://travis-ci.org/Riscure/python-trsfile)
+[![Documentation Status](https://readthedocs.org/projects/trsfile/badge/?version=latest)](https://trsfile.readthedocs.io/en/latest/?badge=latest)
+
 Riscure Inspector uses the `.trs` file format to save and read traces from disk. To better assist reading and writing trace set files from third parties, Riscure published this Python library.
 
 ## Quick start
