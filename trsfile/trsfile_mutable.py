@@ -194,9 +194,9 @@ class TrsFileMutable(TrsFile):
 
 		# Calculate some fields
 		check_values = {}
-		check_values[Header.NUMBER_SAMPLES] = set([len(trace) for trace in self])
-		check_values[Header.SAMPLE_CODING]  = set([trace.sample_coding for trace in self])
-		check_values[Header.LENGTH_DATA]    = set([len(trace.data) for trace in self])
+		check_values[Header.NUMBER_SAMPLES] = set([len(trace) for trace in self]) or [Header.NUMBER_SAMPLES.default]
+		check_values[Header.SAMPLE_CODING]  = set([trace.sample_coding for trace in self]) or [Header.SAMPLE_CODING.default]
+		check_values[Header.LENGTH_DATA]    = set([len(trace.data) for trace in self]) or [Header.LENGTH_DATA.default]
 
 		# Calculate headers based on shadow list
 		for header in Header.get_mandatory():
@@ -211,7 +211,7 @@ class TrsFileMutable(TrsFile):
 
 		# Set the headers and make sure all traces share the common header settings
 		self.headers[Header.NUMBER_TRACES]  = len(self)
-		self.headers[Header.TITLE_SPACE]    = max([len(trace.title) for trace in self])
+		self.headers[Header.TITLE_SPACE]    = max([len(trace.title) for trace in self] or [Header.TITLE_SPACE.default])
 		for header, check_values in check_values.items():
 			if len(check_values) != 1:
 				raise TypeError('traces have different values for header {0:s}'.format(header.name))
@@ -228,9 +228,7 @@ class TrsFileMutable(TrsFile):
 
 				# Check if we have definitions for all headers
 				if not isinstance(header, Header):
-					# TODO: Make this proper
-					print('Warning, can not write unknown header X')
-					continue
+					raise TypeError('cannot write unknown header to trace set')
 
 				# Obtain the tag value
 				if header.type is int:
@@ -246,8 +244,7 @@ class TrsFileMutable(TrsFile):
 				elif header.type is bytes:
 					tag_value = value
 				else:
-					print('Warning, missing bla, to bla', header, header.type)
-					continue
+					raise TypeError('header has a type that can not be serialized')
 
 				# Write the Tag
 				trs_file.write(bytes([header.value]))
