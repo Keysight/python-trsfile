@@ -3,6 +3,7 @@ import struct
 import shutil
 import numpy
 import math
+import pickle
 
 from .trace import Trace
 from .common import Header, SampleCoding, TracePadding
@@ -12,13 +13,11 @@ class TrsFileMutable(TrsFile):
 	temp_folder = None
 	is_saved = False
 
-	def __init__(self, path, padding_mode = TracePadding.PAD, force_overwrite = False):
-		# Check if trs file already exists, warn if it does
-		if not force_overwrite and os.path.isfile(path):
-			raise IOError('trs file already exists, use force_overwrite argument to overwrite.')
-
+	def __init__(self, path, mode = 'x', padding_mode = TracePadding.PAD):
+		# Defaults
 		self.path = path
 		self.padding_mode = padding_mode
+		self.is_read_only = False
 
 		# Shadow list of traces in files
 		self.shadow_trace_index = -1
@@ -30,16 +29,60 @@ class TrsFileMutable(TrsFile):
 			self.file_ext = '.trs'
 		self.temp_folder = self.file_path + '.tmp'
 
-		# Make sure to always start with a fresh start
-		if os.path.isdir(self.temp_folder):
-			shutil.rmtree(self.temp_folder, True)
-		os.mkdir(self.temp_folder)
+		# Parse the mode
+		if mode == 'r':
+			"""r = open for reading"""
 
-		self.__initialize_headers()
+			if not os.path.isdir(self.temp_folder) or not os.path.isfile(self.temp_folder + '/trsfile'):
+				raise FileNotFoundError('No temporary trs file: \'{0:s}\''.format(path))
+
+			with open(self.temp_folder + '/trsfile', 'rb') as f:
+				newself = pickle.load(f)
+			self.__dict__.clear()
+			self.__dict__.update(newself)
+
+			self.is_read_only = True
+
+		elif mode == 'w':
+			"""open for writing, truncating the file first"""
+
+			# Remove the real trace file
+			if os.path.isfile(self.path):
+				os.remove(self.path)
+
+			# Remove temporary files
+			if os.path.isdir(self.temp_folder):
+				shutil.rmtree(self.temp_folder, True)
+
+			# Create the temporary folder and initialize this class
+			os.mkdir(self.temp_folder)
+			self.__initialize_headers()
+
+		elif mode == 'x':
+			"""open for exclusive creation, failing if the file already exists (default)"""
+			if os.path.isdir(self.temp_folder):
+				raise FileExistsError('Temporary trs file exists: \'{0:s}\''.format(self.path))
+
+			# Create the temporary folder and initialize this class
+			os.mkdir(self.temp_folder)
+			self.__initialize_headers()
+		elif mode == 'a':
+			"""a = open for writing, appending to the end of the file if it exists"""
+			if os.path.isdir(self.temp_folder) and os.path.isfile(self.temp_folder + '/trsfile'):
+				with open(self.temp_folder + '/trsfile', 'rb') as f:
+					newself = pickle.load(f)
+				self.__dict__.clear()
+				self.__dict__.update(newself)
+			else:
+				# Create the temporary folder and initialize this class
+				os.mkdir(self.temp_folder)
+				self.__initialize_headers()
+		else:
+			raise ValueError('invalid mode: \'{0:s}\''.format(mode))
 
 	def __del__(self):
-		if self.temp_folder is not None and os.path.isdir(self.temp_folder):
-			shutil.rmtree(self.temp_folder, True)
+		"""Close the temporary file on garbage collection"""
+		self.close()
 
 	def __enter__(self):
 		"""Called when entering a `with` block"""
@@ -54,6 +97,11 @@ class TrsFileMutable(TrsFile):
 		return len(self.shadow_traces)
 
 	def __delitem__(self, index):
+		# Check for read only mode
+		if self.is_read_only:
+			raise TypeError('Temporary trs file does not support item deletion in read-only mode')
+
+
 		self.is_saved = False
 		# Remove the shadow traces and with that check if indexes are correct
 		exception = None
@@ -78,7 +126,6 @@ class TrsFileMutable(TrsFile):
 			raise IndexError(exception)
 
 	def __getitem__(self, index):
-		self.is_saved = False
 		traces = []
 
 		# Try access, and re-raise if wrong for fancy indexing errors
@@ -131,6 +178,10 @@ class TrsFileMutable(TrsFile):
 			return traces[0]
 
 	def __setitem__(self, index, traces):
+		# Check for read only mode
+		if self.is_read_only:
+			raise TypeError('Temporary trs file does not support item assignment in read-only mode')
+
 		self.is_saved = False
 
 		# Make sure we have iterable traces
@@ -287,8 +338,20 @@ class TrsFileMutable(TrsFile):
 		self.is_saved = True
 
 	def close(self):
-		# Make sure to save any changes if we are creating a trace file
+		"""We do not have anything to close, creation of the actual trs file is done using the finalize call"""
+		if os.path.isdir(self.temp_folder):
+			with open(self.temp_folder + '/trsfile', 'wb') as f:
+				pickle.dump(self.__dict__, f)
+
+	def finalize(self):
+		"""This is responsible of creating the TRS file"""
 		self.save()
+		self.cleanup()
+
+	def cleanup(self):
+		"""Remove all temporary files"""
+		if self.temp_folder is not None and os.path.isdir(self.temp_folder):
+			shutil.rmtree(self.temp_folder, True)
 
 	def append(self, trace):
 		self[len(self):len(self)] = trace

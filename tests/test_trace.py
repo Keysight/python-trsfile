@@ -25,5 +25,9 @@ class TestTrsFile(unittest.TestCase):
 	def test_title(self):
 		self.assertEqual(self.trs_file[0].title, 'Clipped trace')
 
+	def test_equality(self):
+		self.assertEqual(self.trs_file[0], self.trs_file[0])
+		self.assertNotEqual(self.trs_file[0], self.trs_file[1])
+
 if __name__ == '__main__':
 	unittest.main()

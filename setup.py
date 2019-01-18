@@ -16,7 +16,7 @@ setuptools.setup(
 	long_description_content_type = "text/markdown",
 	url                           = "https://github.com/riscure/python-trsfile",
 	packages                      = setuptools.find_packages(),
-	install_requires=[
+	install_requires              = [
 		'numpy',
 	],
 	license                       = "BSD 3-Clause Clear License",
@@ -32,5 +32,10 @@ setuptools.setup(
 		'Documentation': 'https://trsfile.readthedocs.io/en/latest',
 		'Bug Reports'  : 'https://github.com/riscure/python-trsfile/issues',
 		'Riscure'      : 'https://www.riscure.com',
+	},
+	entry_points                  = {
+		'console_scripts': [
+			"trsfile = trsfile.cli:main",
+		]
 	},
 )

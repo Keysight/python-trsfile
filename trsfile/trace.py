@@ -1,4 +1,5 @@
 import binascii
+import numpy
 
 from .common import Header, SampleCoding
 
@@ -10,8 +11,27 @@ class Trace:
 	def __init__(self, sample_coding, samples, data = b'', title = 'trace', headers = {}):
 		self.title = title
 		self.data = data if data is not None else b''
-		self.samples = samples
+
+		# Obtain sample coding
+		if not isinstance(sample_coding, SampleCoding):
+			raise TypeError('Trace requires sample_coding to be of type \'SampleCoding\'')
 		self.sample_coding = sample_coding
+
+		# Read in the sample and cast them automatically to the correct type
+		# which is always a numpy.array with a specific dtype as indicated in sample_coding
+		if isinstance(samples, numpy.ndarray):
+			# Check if we need to convert the type of the numpy array
+			if samples.dtype == sample_coding.format:
+				self.samples = samples
+			else:
+				self.samples = samples.astype(sample_coding.format)
+		else:
+			if type(samples) in [bytes, bytearray, str]:
+				self.samples = numpy.frombuffer(samples, dtype=self.sample_coding.format)
+			else:
+				self.samples = numpy.array(samples, dtype=self.sample_coding.format)
+
+		# Optional headers to add meta support to data slicing (get_input etc)
 		self.headers = headers
 
 	def __len__(self):
@@ -67,4 +87,15 @@ class Trace:
 			data = ''
 
 		# Return the representation
-		return '<Trace: {0:d}, {1:s}{2:s}>'.format(len(self.samples), self.title, data)
+		return '<Trace: {0:d}, {1:s}{2:s}>'.format(len(self.samples), self.title.strip(), data)
+
+	def __eq__(self, other):
+		"""Compares two traces for equivalence"""
+		if isinstance(other, Trace):
+			return \
+				self.title == other.title and \
+				self.data == other.data and \
+				self.sample_coding == other.sample_coding and \
+				numpy.array_equal(self.samples, other.samples) and \
+				self.headers == other.headers
+		return False

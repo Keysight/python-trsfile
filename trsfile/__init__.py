@@ -4,24 +4,17 @@ Riscure Inspector trace files.
 """
 
 name        = "trsfile"
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 __author__  = 'Kevin Valk'
 __contact__ =  'valk@riscure.com'
-__all__     = ['trs_open', 'trs_create', 'Trace', 'SampleCoding', 'Header', 'TracePadding']
+__all__     = ['trs_open', 'Trace', 'SampleCoding', 'Header', 'TracePadding']
 
 from .trace import Trace
 from .common import Header, SampleCoding, TracePadding
 from .trsfile import TrsFile
 from .trsfile_mutable import TrsFileMutable
 
-def open(path):
-	return trs_open(path)
+def trs_open(path, mode = 'r', **options):
+	return TrsFile(path, mode, **options)
 
-def create(path, padding_mode = TracePadding.PAD, force_overwrite = False):
-	return trs_create(path, padding_mode, force_overwrite)
-
-def trs_open(path):
-	return TrsFile(path)
-
-def trs_create(path, padding_mode = TracePadding.PAD, force_overwrite = False):
-	return TrsFileMutable(path, padding_mode, force_overwrite)
+open = trs_open
