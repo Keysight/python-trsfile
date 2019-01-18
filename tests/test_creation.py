@@ -11,7 +11,7 @@ import os
 import binascii
 import numpy
 from os.path import dirname, abspath
-from trsfile import TrsFile, Header, SampleCoding
+from trsfile import TrsFile, Header, SampleCoding, TracePadding
 
 TMP_TRS_FILE = 'test-trace.trs'
 
@@ -196,6 +196,51 @@ class TestCreation(unittest.TestCase):
 				for _ in range(0, trace_count)]
 			)
 			self.assertEqual(len(trs_traces), trace_count + 1)
+
+	def test_padding_none(self):
+		sample_count = 1000
+
+		with trsfile.open(TMP_TRS_FILE, 'w', padding_mode = TracePadding.NONE) as trs_traces:
+			# This is the length of the trace
+			trs_traces.extend(
+				Trace(
+					SampleCoding.FLOAT,
+					[0] * sample_count,
+					data = b'\x00' * 16
+				)
+			)
+
+			# Length is smaller
+			with self.assertRaises(ValueError):
+				trs_traces.extend(
+					Trace(
+						SampleCoding.FLOAT,
+						[0] * (sample_count - 1),
+						data = b'\x00' * 16
+					)
+				)
+			self.assertEqual(len(trs_traces), 1)
+
+			# Length is bigger
+			with self.assertRaises(ValueError):
+				trs_traces.extend(
+					Trace(
+						SampleCoding.FLOAT,
+						[0] * (sample_count + 1),
+						data = b'\x00' * 16
+					)
+				)
+			self.assertEqual(len(trs_traces), 1)
+
+			# Length is equal
+			trs_traces.extend(
+				Trace(
+					SampleCoding.FLOAT,
+					[0] * sample_count,
+					data = b'\x00' * 16
+				)
+			)
+			self.assertEqual(len(trs_traces), 2)
 
 	def test_padding(self):
 		trace_count = 100

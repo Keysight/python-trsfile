@@ -273,11 +273,16 @@ class TrsFile:
 		new_number_traces = max(self.headers[Header.NUMBER_TRACES], max(r) + 1)
 		if self.headers[Header.NUMBER_TRACES] < new_number_traces:
 			self.is_mmap_synched = False
-			self.live_update_count += 1
+			self.live_update_count += len(traces)
 
-			if self.live_update_count >= self.live_update:
+			if self.live_update != 0 and self.live_update_count >= self.live_update:
 				self.live_update_count = 0
 				self.update_header(Header.NUMBER_TRACES, new_number_traces)
+
+				# Force flush
+				self.handle.flush()
+				self.file_handle.flush()
+				os.fsync(self.file_handle.fileno())
 			else:
 				self.headers[Header.NUMBER_TRACES] = new_number_traces
 
