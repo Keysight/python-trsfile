@@ -17,9 +17,9 @@ pip install trsfile
 ```python
 import trsfile
 
-with trsfile.open('new.trs') as trs_file:
+with trsfile.open('trace-set.trs', 'r') as traces:
 	# Show all headers
-	for header, value in trs_file.headers.items():
+	for header, value in trs_file.get_headers().items():
 		print(header, '=', value)
 	print()
 
@@ -32,10 +32,25 @@ with trsfile.open('new.trs') as trs_file:
 
 ### Creating `.trs` files
 ```python
-import random, os
-from trsfile import trs_create, Trace, SampleCoding, TracePadding, Header
+import random, os, trsfile
+from trsfile import trs_open, Trace, SampleCoding, TracePadding, Header
 
-with trs_create('new.trs', TracePadding.PAD, force_overwrite = True) as trs_file:
+with trs_open(
+		'trace-set.trs',                 # File name of the trace set
+		'w',                             # Mode: r, w, x, a (default to x)
+		# Zero or more options can be passed (supported options depend on the storage engine)
+		engine = 'TrsEngine',            # Optional: how the trace set is stored (default to TrsEngine)
+		headers = {                      # Optional: headers (see Header class)
+			Header.LABEL_X: 'Testing X',
+			Header.LABEL_Y: 'Testing Y',
+			Header.DESCRIPTION: 'Testing trace creation',
+		},
+		padding_mode = TracePadding.AUTO,# Optional: padding mode (see TracePadding class)
+		live_update = True               # Optional: updates the TRS file for live preview (small performance hit)
+		                                 #   0 (False): Disabled
+		                                 #   1 (True) : TRS file updated after every trace
+		                                 #   N        : TRS file is updated after N traces
+	) as trs_file:
 	# Extend the trace file with 100 traces with each 1000 samples
 	trs_file.extend([
 		Trace(
@@ -48,7 +63,7 @@ with trs_create('new.trs', TracePadding.PAD, force_overwrite = True) as trs_file
 
 	# Replace 5 traces (the slice [0:10:2]) with random length traces.
 	# Because we are creating using the TracePadding.PAD mode, all traces
-	# will be padded to the trace with the biggest length.
+	# will be clipped or padded on the first trace length
 	trs_file[0:10:2] = [
 		Trace(
 			SampleCoding.FLOAT,
@@ -59,13 +74,24 @@ with trs_create('new.trs', TracePadding.PAD, force_overwrite = True) as trs_file
 		for _ in range(0, 5)
 	]
 
-	# Lets delete 10 traces as they are supposedly malformed :)
-	del trs_file[40:50]
+	# Adding one Trace
+	trs_file.append(
+		Trace(
+			SampleCoding.FLOAT,
+			[random.uniform(-255, 255) for _ in range(0, 1000)],
+			data = os.urandom(16)
+		)
+	)
 
-	# Finally, change some headers, all available headers are defined in the Header class
-	trs_file.headers[Header.LABEL_X] = 'Time'
-	trs_file.headers[Header.LABEL_Y] = 'Voltage'
-	trs_file.headers[Header.DESCRIPTION] = 'Traces created for some purpose!'
+	# We cannot delete traces with the TrsEngine, other engines do support this feature
+	#del trs_file[40:50]
+
+	# We can only change headers with a value that has the same length as the previous value
+	# with the TrsEngine, other engines can support dynamically adding, deleting or changing
+	# headers.
+	#trs_file.update_header(Header.LABEL_X, 'Time')
+	#trs_file.update_header(Header.LABEL_Y, 'Voltage')
+	#trs_file.update_header(Header.DESCRIPTION, 'Traces created for some purpose!')
 
 	print('Total length of new trace set: {0:d}'.format(len(trs_file)))
 ```

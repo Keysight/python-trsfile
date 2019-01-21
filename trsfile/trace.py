@@ -1,6 +1,4 @@
-import binascii
 import numpy
-
 from .common import Header, SampleCoding
 
 class Trace:

@@ -4,6 +4,7 @@ import time
 import tempfile
 import unittest
 import math
+import shutil
 from trsfile import Trace, SampleCoding, Header, TracePadding
 
 def get_sample(x):
@@ -25,7 +26,11 @@ class TestCreation(unittest.TestCase):
 	def tearDown(self):
 		# Perform any cleanup of the file
 		try:
-			os.remove(self.tmp_path)
+			if os.path.isfile(self.tmp_path):
+				os.remove(self.tmp_path)
+			elif os.path.isdir(self.tmp_path):
+				shutil.rmtree(self.tmp_path, True)
+				time.sleep(0.01)
 		except FileNotFoundError:
 			pass
 

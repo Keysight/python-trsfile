@@ -4,10 +4,11 @@ import struct
 import numpy
 import copy
 
-from .trace import Trace
-from .common import Header, SampleCoding, TracePadding
+from ..trace import Trace
+from ..common import Header, SampleCoding, TracePadding
+from .engine import Engine
 
-class TrsFile:
+class TrsEngine(Engine):
 	handle = None
 	file_handle = None
 
@@ -18,7 +19,7 @@ class TrsFile:
 	is_mmap_synched = False
 
 	# All our magic function to support easy usage of the Trs file format
-	def __init__(self, path, mode = 'r', **options):
+	def __init__(self, path, mode = 'x', **options):
 		"""
 		Initialize a TraceSet with the TrsFile engine
 
@@ -61,7 +62,7 @@ class TrsFile:
 
 			self.file_handle = open(path, 'rb')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_READ)
-			self.is_read_only = True
+			self.read_only = True
 			self.read_headers = True
 
 		elif mode == 'w':
@@ -78,7 +79,7 @@ class TrsFile:
 			self.file_handle = open(path, 'r+b')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
 
-			self.is_read_only = False
+			self.read_only = False
 			self.read_headers = False
 
 		elif mode == 'x':
@@ -96,7 +97,7 @@ class TrsFile:
 
 			self.file_handle = open(path, 'r+b')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
-			self.is_read_only = False
+			self.read_only = False
 			self.read_headers = False
 
 		elif mode == 'a':
@@ -122,78 +123,37 @@ class TrsFile:
 			# NOTE: We are using r+b mode because we are essentially updating the file!
 			self.file_handle = open(path, 'r+b')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
-			self.is_read_only = False
+			self.read_only = False
 
 		else:
 			raise ValueError('invalid mode: \'{0:s}\''.format(mode))
 
 		self.__initialize_headers(headers)
 
-	def __del__(self):
-		# Sanity close, no harm from calling twice, but we do expect user calling close!
-		self.close()
-
-	def __iter__(self):
-		""" reset pointer """
-		self.iterator_index = -1
-		return self
-
-	def __next__(self):
-		self.iterator_index = self.iterator_index + 1
-
-		if self.iterator_index >= len(self):
-			raise StopIteration
-		return self[self.iterator_index]
-
-	def __enter__(self):
-		"""Called when entering a `with` block"""
-		if self.handle is None or self.handle.closed:
-			raise ValueError('I/O operation on closed file')
-		return self
-
-	def __exit__(self, *args):
-		"""Called when exiting a `with` block"""
-		self.close()
-
-	def __repr__(self):
-		return repr([self[i] for i in range(0, len(self))])
-
-	def __len__(self):
-		"""Returns the total number of traces"""
+	def length(self):
 		return self.headers.get(Header.NUMBER_TRACES, 0)
 
-	def __delitem__(self, index):
-		raise TypeError('Cannot remove traces from a trace set')
+	def is_closed(self):
+		return self.handle is None or self.handle.closed
 
-	def __setitem__(self, index, traces):
-		if self.is_read_only:
-			raise TypeError('Cannot modify existing trace set as it has been opened in read-only mode')
-
-		# Make sure we have iterable traces
-		if isinstance(traces, Trace):
-			traces = [traces]
-
+	def set_traces(self, index, traces):
 		# Make sure we have proper indexing
 		if isinstance(index, slice):
 			start, stop, step = index.indices(index.stop)
-			r = range(start, max(stop, start + len(traces)), step)
+			indexes = range(start, max(stop, start + len(traces)), step)
 		else:
-			r = range(index, index + 1)
+			indexes = range(index, index + 1)
 
 		# Check if we are appending traces directly to the end of the file
-		if r.start > self.headers[Header.NUMBER_TRACES]:
+		if indexes.start > self.headers[Header.NUMBER_TRACES]:
 			raise IndexError('No arbitrary indexing supported')
 
 		# Make sure we have enough traces for every index
-		if len(r) != len(traces):
-			raise TypeError('The number of provided traces ({0:d}) have to be equal to the number of indexes ({1:d})'.format(len(traces), len(r)))
-
-		# Make sure we only are setting traces
-		if any(not isinstance(trace, Trace) for trace in traces):
-			raise TypeError('All objects assigned to a trace set needs to be of type \'Trace\'')
+		if len(indexes) != len(traces):
+			raise TypeError('The number of provided traces ({0:d}) have to be equal to the number of indexes ({1:d})'.format(len(traces), len(indexes)))
 
 		# Early return
-		if len(r) <= 0:
+		if len(indexes) <= 0:
 			return
 
 		# Check if any of the following headers are NOT initialized:
@@ -237,7 +197,7 @@ class TrsFile:
 			self.trace_length = self.sample_length + self.headers.get(Header.LENGTH_DATA, 0) + self.headers.get(Header.TITLE_SPACE, 0)
 
 		# Store all traces with the next sequence numbers and keep these numbers as a list
-		for i, trace in zip(r, traces):
+		for i, trace in zip(indexes, traces):
 			# Update the trace headers to be a reference to our internal headers because that is how it is!
 			trace.headers = self.headers
 
@@ -270,7 +230,7 @@ class TrsFile:
 		# Write the new total number of traces
 		# If you want to have live update, you can give this flag and have this
 		# automatically write to the file
-		new_number_traces = max(self.headers[Header.NUMBER_TRACES], max(r) + 1)
+		new_number_traces = max(self.headers[Header.NUMBER_TRACES], max(indexes) + 1)
 		if self.headers[Header.NUMBER_TRACES] < new_number_traces:
 			self.is_mmap_synched = False
 			self.live_update_count += len(traces)
@@ -286,33 +246,34 @@ class TrsFile:
 			else:
 				self.headers[Header.NUMBER_TRACES] = new_number_traces
 
-	def __getitem__(self, index):
+	def get_traces(self, index):
 		# check for slicing
 		if isinstance(index, slice):
 			# No bounds checking when using slices, that's how python rolls!
-			r = range(*index.indices(self.headers[Header.NUMBER_TRACES]))
+			indexes = range(*index.indices(self.length()))
 		else:
-			# Wrap around for negative indexes
+			# Wrap around for negative index
 			if index < 0:
-				index = index % self.headers[Header.NUMBER_TRACES]
+				index = index % self.length()
 
 			# Check if we are still in bounds
-			if index >= self.headers[Header.NUMBER_TRACES]:
-				raise IndexError('list index out of range')
+			if index >= self.length():
+				raise IndexError('List index out of range')
 
-			r = range(index, index + 1)
+			indexes = range(index, index + 1)
 
 		# We need to resize the mmap if we added something directly on the file handle
 		# We do it here for optimization purposes, if you do not read, no resizing :)
-		if not self.is_mmap_synched and not self.is_read_only:
-			total_file_size = self.data_offset + (len(self) + 1) * self.trace_length
+		if not self.is_mmap_synched and not self.read_only:
+			exit('should be read only ' + str(self.read_only))
+			total_file_size = self.data_offset + (self.length() + 1) * self.trace_length
 			if self.handle.size() < total_file_size:
 				self.handle.resize(total_file_size)
 			self.is_mmap_synched = True
 
 		# Now read in all traces
 		traces = []
-		for i in r:
+		for i in indexes:
 			# Seek to the beginning of the trace
 			self.handle.seek(self.data_offset + i * self.trace_length)
 
@@ -333,30 +294,7 @@ class TrsFile:
 
 			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, data, title, self.headers))
 
-		# Return the select item(s)
-		if isinstance(index, slice):
-			return traces
-		else:
-			# Earlier logic should ensure traces contains one element!
-			return traces[0]
-
-	def append(self, trace):
-		if self.is_read_only:
-			raise TypeError('Cannot modify existing trace set as it has been opened in read-only mode')
-
-		self[len(self):len(self)] = trace
-
-	def extend(self, traces):
-		if self.is_read_only:
-			raise TypeError('Cannot modify existing trace set as it has been opened in read-only mode')
-
-		self[len(self):len(self)] = traces
-
-	def insert(self, index, trace):
-		raise TypeError('Cannot insert traces in a trace set')
-
-	def reverse(self):
-		return self[::-1]
+		return traces
 
 	def close(self):
 		"""Closes the open file handle if it is opened"""
@@ -364,7 +302,7 @@ class TrsFile:
 		# Close all handles
 		if self.handle is not None and not self.handle.closed:
 			# Make sure we write all headers to the file
-			if not self.is_read_only:
+			if not self.read_only:
 				self.__write_headers({Header.NUMBER_TRACES: self.headers[Header.NUMBER_TRACES]})
 
 			# Flush the mmap (according to docs this is important) and close
@@ -374,35 +312,9 @@ class TrsFile:
 			self.file_handle.close()
 
 	def update_headers(self, headers):
-		"""Updates zero or more headers of this TRS file, returns True on change"""
-		if self.is_read_only:
-			raise TypeError('The TRS file has been opened in a read-only mode')
-
-		if not isinstance(headers, dict) or any([not isinstance(header, Header) for header in self.headers]):
-			raise TypeError('Setting headers requires a dictionary of Headers')
-
-		# Only update headers that are changed
-		changed_headers = {}
-		for header, value in headers.items():
-			if value == self.headers[header]:
-				continue
-			changed_headers[header] = value
-
-		# Do nothing if nothing has changed
-		if len(changed_headers) <= 0:
-			return False
-
-		# Update internally the headers
-		self.headers.update(changed_headers)
-
-		# Write the headers
-		self.__write_headers(changed_headers)
-
-		return True
-
-	def update_header(self, header, value):
-		"""Updates one single header, returns true on change"""
-		return self.update_headers({header: value})
+		changed_headers = super().update_headers(headers)
+		if len(changed_headers) > 0:
+			self.__write_headers(changed_headers)
 
 	def __initialize_headers(self, headers = None):
 		"""Initialize the headers, this is done either by reading the headers from file or using headers given on creation"""
@@ -566,19 +478,3 @@ class TrsFile:
 		file_size = self.handle.tell()
 		if file_size != self.data_offset + self.headers[Header.NUMBER_TRACES] * self.trace_length:
 			raise IOError('TRS file has an unexpected length')
-
-	def __eq__(self, other):
-		"""Compares two trace sets to each other"""
-
-		if not isinstance(other, TrsFile):
-			return False
-
-		if len(self) != len(other):
-			return False
-
-		# Not using any, because we want to stop as soon as a difference arises
-		for self_trace, other_trace in zip(self, other):
-			if self_trace != other_trace:
-				return False
-
-		return True

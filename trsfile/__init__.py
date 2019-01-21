@@ -7,14 +7,21 @@ name        = "trsfile"
 __version__ = '0.2.0'
 __author__  = 'Kevin Valk'
 __contact__ =  'valk@riscure.com'
-__all__     = ['trs_open', 'Trace', 'SampleCoding', 'Header', 'TracePadding']
+__all__     = [
+	'trs_open', 'Trace', 'TraceSet', 'SampleCoding', 'Header', 'TracePadding', \
+	'Engine', 'TrsEngine', 'TmpEngine',
+]
 
 from .trace import Trace
 from .common import Header, SampleCoding, TracePadding
-from .trsfile import TrsFile
-from .trsfile_mutable import TrsFileMutable
+from .trace_set import TraceSet
+from .engine.engine import Engine
+
+# All our engines
+from .engine.trs import TrsEngine
+from .engine.tmp import TmpEngine
 
 def trs_open(path, mode = 'r', **options):
-	return TrsFile(path, mode, **options)
+	return TraceSet(path, mode, **options)
 
 open = trs_open

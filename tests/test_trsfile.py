@@ -6,7 +6,7 @@ from trsfile import SampleCoding
 
 class TestTrsFile(unittest.TestCase):
 	def setUp(self):
-		self.trs_file = trsfile.open(dirname(abspath(__file__)) + '/data/90x500xfloat.trs')
+		self.trs_file = trsfile.open(dirname(abspath(__file__)) + '/data/90x500xfloat.trs', engine='TrsEngine')
 
 	def tearDown(self):
 		self.trs_file.close()
