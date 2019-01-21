@@ -1,10 +1,8 @@
 import unittest
 import trsfile
-import os
-import binascii
 import numpy
 from os.path import dirname, abspath
-from trsfile import TrsFile, Header, SampleCoding
+from trsfile import SampleCoding
 
 class TestTrsFile(unittest.TestCase):
 	def setUp(self):
