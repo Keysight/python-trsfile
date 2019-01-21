@@ -1,49 +1,40 @@
-import random, os
+import os
 import trsfile
 import time
-from trsfile import Trace, SampleCoding, Header
-
-import numpy
-
+import tempfile
 import unittest
-import trsfile
-import os
-import binascii
-import numpy
-from os.path import dirname, abspath
-from trsfile import TrsFile, Header, SampleCoding, TracePadding
+import math
+from trsfile import Trace, SampleCoding, Header, TracePadding
 
-TMP_TRS_FILE = 'test-trace.trs'
+def get_sample(x):
+	return math.sin(0.5 * x) * 1000
 
 class TestCreation(unittest.TestCase):
+
 	def setUp(self):
-		# Make sure no tmp exist
-		if os.path.isfile(TMP_TRS_FILE):
-			for i in range(0, 10):
-				try:
-					os.remove(TMP_TRS_FILE)
-					break
-				except (FileNotFoundError, PermissionError) as e:
-					pass
-				time.sleep(1)
+		# We want a tmp file name in a safe way
+		fd, self.tmp_path = tempfile.mkstemp(prefix='trsfile_')
+
+		# However, some tests require the file to not yet exist
+		os.close(fd)
+		os.remove(self.tmp_path)
+
+		# Small guard for windows to prevent some weird race conditions...
+		time.sleep(0.01)
 
 	def tearDown(self):
-		# Make sure no tmp exist
-		if os.path.isfile(TMP_TRS_FILE):
-			for i in range(0, 10):
-				try:
-					os.remove(TMP_TRS_FILE)
-					break
-				except (FileNotFoundError, PermissionError) as e:
-					pass
-				time.sleep(1)
+		# Perform any cleanup of the file
+		try:
+			os.remove(self.tmp_path)
+		except FileNotFoundError:
+			pass
 
 	def test_write(self):
 		trace_count = 100
 		sample_count = 1000
 
 		try:
-			with trsfile.open(TMP_TRS_FILE, 'w', headers = {
+			with trsfile.open(self.tmp_path, 'w', headers = {
 				Header.LABEL_X: 'Testing X',
 				Header.LABEL_Y: 'Testing Y',
 				Header.DESCRIPTION: 'Testing trace creation',
@@ -52,9 +43,9 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * sample_count,
-						data = b'\x00' * 16
+						data = i.to_bytes(8, byteorder='big')
 					)
-					for _ in range(0, trace_count)]
+					for i in range(0, trace_count)]
 				)
 		except Exception:
 			self.assertTrue(False)
@@ -66,14 +57,14 @@ class TestCreation(unittest.TestCase):
 		original_traces = [
 				Trace(
 					SampleCoding.FLOAT,
-					[random.uniform(-1000, 1000) for _ in range(0, sample_count)],
-					data = os.urandom(16)
+					[get_sample(i) for i in range(0, sample_count)],
+					data = i.to_bytes(8, byteorder='big')
 				)
 				for i in range(0, trace_count)
 			]
 
 		# Create a trace
-		with trsfile.open(TMP_TRS_FILE, 'w', headers = {
+		with trsfile.open(self.tmp_path, 'w', headers = {
 			Header.LABEL_X: 'Testing X',
 			Header.LABEL_Y: 'Testing Y',
 			Header.DESCRIPTION: 'Testing trace creation',
@@ -85,7 +76,7 @@ class TestCreation(unittest.TestCase):
 			self.assertEqual(len(original_traces), len(trs_traces))
 
 		# Read the trace and check if everything is good
-		with trsfile.open(TMP_TRS_FILE, 'r') as trs_traces:
+		with trsfile.open(self.tmp_path, 'r') as trs_traces:
 			# Check if lengths are still good :)
 			self.assertEqual(len(original_traces), len(trs_traces))
 
@@ -95,7 +86,7 @@ class TestCreation(unittest.TestCase):
 
 	def test_read_non_existing(self):
 		with self.assertRaises(FileNotFoundError):
-			with trsfile.open(TMP_TRS_FILE, 'r') as trs_traces:
+			with trsfile.open(self.tmp_path, 'r') as trs_traces:
 				pass
 
 	def test_append(self):
@@ -103,7 +94,7 @@ class TestCreation(unittest.TestCase):
 		sample_count = 1000
 
 		# Append to a non-existing file, behaves same as normal "write"
-		with trsfile.open(TMP_TRS_FILE, 'a') as trs_traces:
+		with trsfile.open(self.tmp_path, 'a') as trs_traces:
 			self.assertEqual(len(trs_traces), 0)
 
 			# Extend the trace file with 100 traces with each 1000 samples
@@ -111,20 +102,20 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 16
+					data = i.to_bytes(8, byteorder='big')
 				)
-				for _ in range(0, trace_count)]
+				for i in range(0, trace_count)]
 			)
 
 			self.assertEqual(len(trs_traces), trace_count)
 
-		# Now open and close for a few times while adding random number of traces
+		# Now open and close for a few times while adding some number of traces
 		expected_length = trace_count
-		for i in range(0, 10):
+		for t in range(0, 10):
 
-			trace_count = random.randint(0, 100)
+			trace_count = (t + 1) * 10
 
-			with trsfile.open(TMP_TRS_FILE, 'a') as trs_traces:
+			with trsfile.open(self.tmp_path, 'a') as trs_traces:
 				self.assertEqual(len(trs_traces), expected_length)
 
 				# Extend the trace file with 100 traces with each 1000 samples
@@ -132,9 +123,9 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * sample_count,
-						data = b'\x00' * 16
+						data = i.to_bytes(8, byteorder='big')
 					)
-					for _ in range(0, trace_count)]
+					for i in range(0, trace_count)]
 				)
 
 				expected_length += trace_count
@@ -145,7 +136,7 @@ class TestCreation(unittest.TestCase):
 		sample_count = 1000
 
 		# Write to file exclusively
-		with trsfile.open(TMP_TRS_FILE, 'x') as trs_traces:
+		with trsfile.open(self.tmp_path, 'x') as trs_traces:
 			self.assertEqual(len(trs_traces), 0)
 
 			# Extend the trace file with 100 traces with each 1000 samples
@@ -153,16 +144,16 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 16
+					data = i.to_bytes(8, byteorder='big')
 				)
-				for _ in range(0, trace_count)]
+				for i in range(0, trace_count)]
 			)
 
 			self.assertEqual(len(trs_traces), trace_count)
 
 		# Now try again (this should throw an exception)
 		with self.assertRaises(FileExistsError):
-			with trsfile.open(TMP_TRS_FILE, 'x') as trs_traces:
+			with trsfile.open(self.tmp_path, 'x') as trs_traces:
 				self.assertEqual(len(trs_traces), trace_count)
 
 
@@ -170,7 +161,7 @@ class TestCreation(unittest.TestCase):
 		trace_count = 100
 		sample_count = 1000
 
-		with trsfile.open(TMP_TRS_FILE, 'w') as trs_traces:
+		with trsfile.open(self.tmp_path, 'w') as trs_traces:
 			# Extend empty list
 			trs_traces.extend([])
 			self.assertEqual(len(trs_traces), 0)
@@ -180,7 +171,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 16
+					data = b'\x00' * 8
 				)
 				]
 			)
@@ -191,22 +182,22 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 16
+					data = i.to_bytes(8, byteorder='big')
 				)
-				for _ in range(0, trace_count)]
+				for i in range(0, trace_count)]
 			)
 			self.assertEqual(len(trs_traces), trace_count + 1)
 
 	def test_padding_none(self):
 		sample_count = 1000
 
-		with trsfile.open(TMP_TRS_FILE, 'w', padding_mode = TracePadding.NONE) as trs_traces:
+		with trsfile.open(self.tmp_path, 'w', padding_mode = TracePadding.NONE) as trs_traces:
 			# This is the length of the trace
 			trs_traces.extend(
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 16
+					data = b'\x00' * 8
 				)
 			)
 
@@ -216,7 +207,7 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * (sample_count - 1),
-						data = b'\x00' * 16
+						data = b'\x10' * 8
 					)
 				)
 			self.assertEqual(len(trs_traces), 1)
@@ -227,7 +218,7 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * (sample_count + 1),
-						data = b'\x00' * 16
+						data = b'\x01' * 8
 					)
 				)
 			self.assertEqual(len(trs_traces), 1)
@@ -237,7 +228,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 16
+					data = b'\x00' * 8
 				)
 			)
 			self.assertEqual(len(trs_traces), 2)
@@ -247,13 +238,13 @@ class TestCreation(unittest.TestCase):
 		sample_count = 1000
 		fmt = SampleCoding.FLOAT
 
-		with trsfile.open(TMP_TRS_FILE, 'w') as trs_traces:
+		with trsfile.open(self.tmp_path, 'w') as trs_traces:
 			# This is the length everything should be padded/clipped to
 			trs_traces.extend(
 				Trace(
 					fmt,
 					b'\xDE' * (sample_count * fmt.size),
-					data = b'\x00' * 16
+					data = b'\x00' * 8
 				)
 			)
 
@@ -262,7 +253,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					fmt,
 					b'\xDE' * (sample_count + i) * fmt.size,
-					data = b'\x00' * 16
+					data = abs(i).to_bytes(8, byteorder='big')
 				)
 				for i in range(0, -trace_count, -1)]
 			)
@@ -272,12 +263,12 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					fmt,
 					b'\xDE' * (sample_count + i) * fmt.size,
-					data = b'\x00' * 16
+					data = i.to_bytes(8, byteorder='big')
 				)
 				for i in range(0, trace_count)]
 			)
 
-		with trsfile.open(TMP_TRS_FILE, 'r') as trs_traces:
+		with trsfile.open(self.tmp_path, 'r') as trs_traces:
 			self.assertEqual(len(trs_traces), trace_count * 2 + 1)
 
 			# Check that all traces are of the same size
