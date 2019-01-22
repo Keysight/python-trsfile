@@ -55,6 +55,24 @@ class TestCreation(unittest.TestCase):
 		except Exception:
 			self.assertTrue(False)
 
+	def test_write_closed(self):
+		trace_count = 100
+		sample_count = 1000
+
+		with trsfile.open(self.tmp_path, 'w') as trs_traces:
+			trs_traces.extend([
+				Trace(
+					SampleCoding.FLOAT,
+					[0] * sample_count,
+					data = i.to_bytes(8, byteorder='big')
+				)
+				for i in range(0, trace_count)]
+			)
+
+		# Should raise an "ValueError: I/O operation on closed trace set"
+		with self.assertRaises(ValueError):
+			print(trs_traces)
+
 	def test_read(self):
 		trace_count = 100
 		sample_count = 1000

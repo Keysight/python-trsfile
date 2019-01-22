@@ -39,15 +39,15 @@ with trs_open(
 		'trace-set.trs',                 # File name of the trace set
 		'w',                             # Mode: r, w, x, a (default to x)
 		# Zero or more options can be passed (supported options depend on the storage engine)
-		engine = 'TrsEngine',            # Optional: how the trace set is stored (default to TrsEngine)
+		engine = 'TrsEngine',            # Optional: how the trace set is stored (defaults to TrsEngine)
 		headers = {                      # Optional: headers (see Header class)
 			Header.LABEL_X: 'Testing X',
 			Header.LABEL_Y: 'Testing Y',
 			Header.DESCRIPTION: 'Testing trace creation',
 		},
-		padding_mode = TracePadding.AUTO,# Optional: padding mode (see TracePadding class)
+		padding_mode = TracePadding.AUTO,# Optional: padding mode (defaults to TracePadding.AUTO)
 		live_update = True               # Optional: updates the TRS file for live preview (small performance hit)
-		                                 #   0 (False): Disabled
+		                                 #   0 (False): Disabled (default)
 		                                 #   1 (True) : TRS file updated after every trace
 		                                 #   N        : TRS file is updated after N traces
 	) as trs_file:
@@ -96,8 +96,27 @@ with trs_open(
 	print('Total length of new trace set: {0:d}'.format(len(trs_file)))
 ```
 
+### Converting `TraceSet` from one type to another
+```python
+import random, os, trsfile
+
+with \
+	trsfile.open(
+		'trace-set',                  # Previously create trace set
+		'r',                          # Read only mode
+		engine='FileEngine'           # Using the FileEngine
+	) as traces, \
+	trsfile.open(                     # Note: TrsEngine is the default
+		'trace-set.trs',              # Name of the new trace set
+		'w',                          # Write mode
+		headers=traces.get_headers()  # Copy the headers
+	) as new_traces:
+	new_traces.extend(traces)         # Extend the new trace set with the
+	                                  # traces from the old trace set
+```
+
 ## Documentation
-The full documentation is available in the `doc` folder with a readable version on [Read the Docs](https://trsfile.readthedocs.io/).
+The full documentation is available in the `docs` folder with a readable version on [Read the Docs](https://trsfile.readthedocs.io/).
 
 ## Testing
 The library supports Python `unittest` module and the tests can be executed with the following command:

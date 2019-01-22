@@ -2,8 +2,12 @@ import numpy
 from .common import Header, SampleCoding
 
 class Trace:
-	"""
-	Single trace
+	"""The :py:obj:`Trace` class behaves like a :py:obj:`list`
+	object were each item in the list is a sample of the trace.
+
+	When a :py:obj:`Trace` is initialized the samples are (optionally) converted to a
+	:py:class:`numpy.array` depending on the current type of the samples and the
+	provided :py:obj:`sample_coding`.
 	"""
 
 	def __init__(self, sample_coding, samples, data = b'', title = 'trace', headers = {}):

@@ -9,33 +9,37 @@ from ..common import Header, SampleCoding, TracePadding
 from .engine import Engine
 
 class TrsEngine(Engine):
-	handle = None
-	file_handle = None
+	"""
+	This engine supports .trs files from Riscure as specified in the
+	"Trace set coding" document in Inspector.
 
-	data_offset = None
-	sample_length = None
-	trace_length = None
+	This engine supports the following options:
 
-	is_mmap_synched = False
+	+--------------+-----------------------------------------------------------+
+	| Option       | Description                                               |
+	+==============+===========================================================+
+	| headers      | Dictionary containing zero or more headers, see           |
+	|              | :py:class:`trsfile.common.Header`                         |
+	+--------------+-----------------------------------------------------------+
+	| live_update  | Performs live update of the TRS file every N traces. True |
+	|              | for updating after every trace and False for never.       |
+	+--------------+-----------------------------------------------------------+
+	| padding_mode | Padding mode to use. The supported values are:            |
+	|              | :py:attr:`trsfile.common.TracePadding.NONE` and           |
+	|              | :py:attr:`trsfile.common.TracePadding.AUTO` (default)     |
+	+--------------+-----------------------------------------------------------+
+	"""
 
-	# All our magic function to support easy usage of the Trs file format
 	def __init__(self, path, mode = 'x', **options):
-		"""
-		Initialize a TraceSet with the TrsFile engine
-
-		The following options are supported:
-		+--------------+---------------------------------------------------------------+
-		| Option       | Description                                                   |
-		+==============+===============================================================+
-		| headers      | Dictionary containing zero or more headers, see :py:meth:`trsfile.common.Header` |
-		+--------------+---------------------------------------------------------------+
-		| live_update  | Performs live update of the TRS file every X traces. True for |
-		|              | updating after every trace and False for never.               |
-		+--------------+---------------------------------------------------------------+
-		| padding_mode | Padding mode to use, see :py:meth:`trsfile.common.TracePadding` |
-		+--------------+---------------------------------------------------------------+
-		"""
 		self.path = path
+		self.handle = None
+		self.file_handle = None
+
+		self.data_offset = None
+		self.sample_length = None
+		self.trace_length = None
+
+		self.is_mmap_synched = False
 
 		# Initialize empty dictionaries
 		self.headers = {}
@@ -265,7 +269,6 @@ class TrsEngine(Engine):
 		# We need to resize the mmap if we added something directly on the file handle
 		# We do it here for optimization purposes, if you do not read, no resizing :)
 		if not self.is_mmap_synched and not self.read_only:
-			exit('should be read only ' + str(self.read_only))
 			total_file_size = self.data_offset + (self.length() + 1) * self.trace_length
 			if self.handle.size() < total_file_size:
 				self.handle.resize(total_file_size)

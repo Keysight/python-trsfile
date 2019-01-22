@@ -10,27 +10,38 @@ from .engine.engine import Engine
 
 # All our engines
 from .engine.trs import TrsEngine
-from .engine.tmp import TmpEngine
+from .engine.file import FileEngine
 
 engines = {
 	'trsengine': TrsEngine,
-	'tmpengine': TmpEngine,
+	'fileengine': FileEngine,
 }
+ENGINE = 'engine'
 
 class TraceSet:
-	engine = None
+	"""The :py:obj:`TraceSet` class behaves like a :py:obj:`list`
+	object were each item in the list is a :py:obj:`Trace`.
+
+	Storing the :py:obj:`TraceSet` requires knowledge on the format which is
+	resolved through the usage of storage engines (:py:obj:`Engine`).
+	"""
 
 	def __init__(self, path, mode = 'r', **options):
-		# Get the storage engine if one is given, else default to TrsEngine
-		engine = options.get('engine', TrsEngine)
-		if 'engine' in options:
-			del options['engine']
+		# Defaults
+		self.engine = None
 
-		# We also support engine to be passed as string, if so we need to eval
+		# Get the storage engine if one is given, else default to TrsEngine
+		engine = options.get(ENGINE, TrsEngine)
+		if ENGINE in options:
+			del options[ENGINE]
+
+		# We also support engine to be passed as string
 		if isinstance(engine, str):
-			engine_name = engine.lower().rstrip('engine') + 'engine'
+			engine_name = engine.lower()
+			if not engine_name.endswith(ENGINE):
+				engine_name += ENGINE
 			if engine_name not in engines:
-				raise ValueError('The storage engine does not exists')
+				raise ValueError('The storage engine \'{0:s}\'does not exists'.format(engine_name))
 			engine = engines[engine_name]
 
 		# Check type
@@ -57,7 +68,7 @@ class TraceSet:
 	def __enter__(self):
 		"""Called when entering a `with` block"""
 		if self.engine.is_closed():
-			raise ValueError('I/O operation on closed file')
+			raise ValueError('I/O operation on closed trace set')
 		return self
 
 	def __exit__(self, *args):
@@ -71,15 +82,24 @@ class TraceSet:
 			return '<TraceSet ({0:d}), {1:s}, ... ,{2:s}>'.format(len(self), repr(self[0]), repr(self[-1]))
 
 	def __len__(self):
+		if self.engine.is_closed():
+			raise ValueError('I/O operation on closed trace set')
+
 		return self.engine.length()
 
 	def __delitem__(self, index):
+		if self.engine.is_closed():
+			raise ValueError('I/O operation on closed trace set')
+
 		if self.engine.is_read_only():
 			raise TypeError('Cannot modify trace set, it is (opened) read-only')
 
 		return self.engine.del_traces(index)
 
 	def __setitem__(self, index, traces):
+		if self.engine.is_closed():
+			raise ValueError('I/O operation on closed trace set')
+
 		if self.engine.is_read_only():
 			raise TypeError('Cannot modify trace set, it is (opened) read-only')
 
@@ -94,6 +114,9 @@ class TraceSet:
 		return self.engine.set_traces(index, traces)
 
 	def __getitem__(self, index):
+		if self.engine.is_closed():
+			raise ValueError('I/O operation on closed trace set')
+
 		traces = self.engine.get_traces(index)
 
 		# Return the select item(s)
@@ -111,31 +134,27 @@ class TraceSet:
 			self.engine.close()
 
 	def append(self, trace):
-		if self.engine.is_read_only():
-			raise TypeError('Cannot modify trace set, it is (opened) read-only')
-
 		self[len(self):len(self)] = trace
 
 	def extend(self, traces):
-		if self.engine.is_read_only():
-			raise TypeError('Cannot modify trace set, it is (opened) read-only')
-
 		self[len(self):len(self)] = traces
 
 	def insert(self, index, trace):
-		if self.engine.is_read_only():
-			raise TypeError('Cannot modify trace set, it is (opened) read-only')
-
-		self.engine.insert(index, trace)
+		# TODO: Not yet implemented nicely
+		#self[index:index] = trace
+		raise NotImplementedError('Insert has not yet been implemented for TraceSet, please raise a Github ticket for priority!')
 
 	def reverse(self):
 		return self[::-1]
 
 	def update_headers(self, headers):
+		if self.engine.is_closed():
+			raise ValueError('I/O operation on closed trace set')
+
 		return self.engine.update_headers(headers)
 
 	def update_header(self, header, value):
-		return self.engine.update_header(header, value)
+		return self.update_headers({header: value})
 
 	def get_headers(self):
 		return self.engine.headers
@@ -145,7 +164,6 @@ class TraceSet:
 
 	def __eq__(self, other):
 		"""Compares two trace sets to each other"""
-
 		if not isinstance(other, TrsFile):
 			return False
 

@@ -1,10 +1,9 @@
 from enum import Enum
 
 class TracePadding(Enum):
-	"""
-	Defines the padding mode of the samples in each trace. This can be helpful
+	"""Defines the padding mode of the samples in each trace. This can be helpful
 	when not all traces will be the same length. This can be set in
-	:py:meth:`trsfile.open()`, :py:func:`trsfile.trs_open()`, :py:meth:`trsfile.trsfile_mutable.TrsFileMutable`
+	:py:func:`trsfile.open()`, :py:func:`trsfile.trs_open()`
 
 	+----------+---------------------------------------------------------------+
 	| Mode     | Description                                                   |
@@ -29,8 +28,7 @@ class TracePadding(Enum):
 	AUTO = 3
 
 class SampleCoding(Enum):
-	"""
-	Defines the encoding of all the samples in the trace.
+	"""Defines the encoding of all the samples in the trace.
 	Bit 4 specifies if it is a float (1) or an integer (0),
 	bits 0 to 3 specifies the length of the value.
 	Finally, bits 5-7 are currently reserved and set to 000.
@@ -55,6 +53,16 @@ class SampleCoding(Enum):
 		return (self._value_ & 0x10) != 0
 
 class Header(Enum):
+	"""All headers that are currently supported in the .trs file format as
+	defined in the inspector manual (2018). The storage engine shall try to
+	always store all headers regardless if they are used or not. However, some
+	file formats will have no way of storing arbitrary headers. As such, optional
+	headers can be dropped.
+
+	Some headers can be used by :py:class:`trsfile.trace_set.TraceSet` or
+	:py:class:`trsfile.trace.Trace` to augment their functionality. An example
+	of this	is the :py:meth:`trsfile.trace.Trace.get_key` method.
+	"""
 	# Enumeration                       Tag   Name  Mandatory Python type   Length  Default value      Description
 	NUMBER_TRACES                    = (0x41, 'NT', True,     int,          4,      0,                 'Number of traces')
 	NUMBER_SAMPLES                   = (0x42, 'NS', True,     int,          4,      None,              'Number of samples per trace')

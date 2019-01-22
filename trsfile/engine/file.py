@@ -8,7 +8,28 @@ from ..trace import Trace
 from ..common import Header, SampleCoding, TracePadding
 from .engine import Engine
 
-class TmpEngine(Engine):
+class FileEngine(Engine):
+	"""
+	This engine tries to save traces to disk in the most versatile and simple
+	manner available. No known tools support this file format and serve only as
+	an intermediate step to later convert it to a supported format.
+
+	This is can be useful when the trace length (number of samples) varies as
+	this is often not supported in trace files.
+
+	After acquisition, the file can be converted to the proper format with the
+	correct padding mode.
+
+	This engine supports the following options:
+
+	+--------------+-----------------------------------------------------------+
+	| Option       | Description                                               |
+	+==============+===========================================================+
+	| headers      | Dictionary containing zero or more headers, see           |
+	|              | :py:class:`trsfile.common.Header`                         |
+	+--------------+-----------------------------------------------------------+
+	"""
+
 	INFO_FILE = 'traceset.pickle'
 
 	def __get_trace_path(self, i, name):
@@ -86,7 +107,11 @@ class TmpEngine(Engine):
 			raise ValueError('invalid mode: \'{0:s}\''.format(mode))
 
 		# Update the headers
-		self.update_headers(options.get('headers', None))
+		headers = options.get('headers', None)
+		if self.is_read_only() and headers is not None:
+			raise ValueError('Cannot add headers when opening in read-only mode')
+		elif headers is not None:
+			self.update_headers(headers)
 
 	def __initialize_headers(self):
 		headers = {}
