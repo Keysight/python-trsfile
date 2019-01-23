@@ -33,9 +33,9 @@ setuptools.setup(
 		'Bug Reports'  : 'https://github.com/riscure/python-trsfile/issues',
 		'Riscure'      : 'https://www.riscure.com',
 	},
-	entry_points                  = {
-		'console_scripts': [
-			"trsfile = trsfile.cli:main",
-		]
-	},
+	# entry_points                  = {
+	# 	'console_scripts': [
+	# 		"trsfile = trsfile.cli:main",
+	# 	]
+	# },
 )
