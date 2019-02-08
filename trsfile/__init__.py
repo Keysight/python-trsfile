@@ -4,7 +4,7 @@ Riscure Inspector trace files.
 """
 
 name        = "trsfile"
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__  = 'Kevin Valk'
 __contact__ =  'valk@riscure.com'
 __all__     = [
@@ -12,14 +12,14 @@ __all__     = [
 	'Engine', 'TrsEngine', 'FileEngine',
 ]
 
-from .trace import Trace
-from .common import Header, SampleCoding, TracePadding
-from .trace_set import TraceSet
-from .engine.engine import Engine
+from trsfile.trace import Trace
+from trsfile.common import Header, SampleCoding, TracePadding
+from trsfile.trace_set import TraceSet
+from trsfile.engine.engine import Engine
 
 # All our engines
-from .engine.trs import TrsEngine
-from .engine.file import FileEngine
+from trsfile.engine.trs import TrsEngine
+from trsfile.engine.file import FileEngine
 
 def trs_open(path, mode = 'r', **options):
 	"""Reads, modifies or creates a :py:obj:`TraceSet` with a specific storage

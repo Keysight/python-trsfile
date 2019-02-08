@@ -1,5 +1,5 @@
 import numpy
-from .common import Header, SampleCoding
+from trsfile.common import Header, SampleCoding
 
 class Trace:
 	"""The :py:obj:`Trace` class behaves like a :py:obj:`list`

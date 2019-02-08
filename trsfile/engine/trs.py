@@ -4,9 +4,9 @@ import struct
 import numpy
 import copy
 
-from ..trace import Trace
-from ..common import Header, SampleCoding, TracePadding
-from .engine import Engine
+from trsfile.trace import Trace
+from trsfile.common import Header, SampleCoding, TracePadding
+from trsfile.engine.engine import Engine
 
 class TrsEngine(Engine):
 	"""

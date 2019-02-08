@@ -1,4 +1,4 @@
-from ..common import Header
+from trsfile.common import Header
 
 class Engine:
 	read_only = False

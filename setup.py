@@ -21,13 +21,13 @@ setuptools.setup(
 	],
 	license                       = "BSD 3-Clause Clear License",
 	keywords                      = "trs trace inspector riscure",
-	classifiers                   = (
+	classifiers                   = [
 		"Development Status :: 4 - Beta",
 		"Programming Language :: Python :: 3",
 		"License :: OSI Approved :: BSD License",
 		"Topic :: Utilities",
 		"Operating System :: OS Independent",
-	),
+	],
 	project_urls                  = {
 		'Documentation': 'https://trsfile.readthedocs.io/en/latest',
 		'Bug Reports'  : 'https://github.com/riscure/python-trsfile/issues',
