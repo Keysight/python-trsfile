@@ -40,10 +40,10 @@ class TestCreation(unittest.TestCase):
 
 		try:
 			with trsfile.open(self.tmp_path, 'w', headers = {
-				Header.LABEL_X: 'Testing X',
-				Header.LABEL_Y: 'Testing Y',
-				Header.DESCRIPTION: 'Testing trace creation',
-				}) as trs_traces:
+					Header.LABEL_X: 'Testing X',
+					Header.LABEL_Y: 'Testing Y',
+					Header.DESCRIPTION: 'Testing trace creation',
+				}, padding_mode = TracePadding.AUTO) as trs_traces:
 				trs_traces.extend([
 					Trace(
 						SampleCoding.FLOAT,
@@ -59,7 +59,7 @@ class TestCreation(unittest.TestCase):
 		trace_count = 100
 		sample_count = 1000
 
-		with trsfile.open(self.tmp_path, 'w') as trs_traces:
+		with trsfile.open(self.tmp_path, 'w', padding_mode=TracePadding.AUTO) as trs_traces:
 			trs_traces.extend([
 				Trace(
 					SampleCoding.FLOAT,
@@ -88,10 +88,11 @@ class TestCreation(unittest.TestCase):
 
 		# Create a trace
 		with trsfile.open(self.tmp_path, 'w', headers = {
-			Header.LABEL_X: 'Testing X',
-			Header.LABEL_Y: 'Testing Y',
-			Header.DESCRIPTION: 'Testing trace creation',
-			}) as trs_traces:
+				Header.LABEL_X: 'Testing X',
+				Header.LABEL_Y: 'Testing Y',
+				Header.DESCRIPTION: 'Testing trace creation',
+			}, padding_mode = TracePadding.AUTO
+			) as trs_traces:
 
 			trs_traces.extend(original_traces)
 
@@ -117,7 +118,7 @@ class TestCreation(unittest.TestCase):
 		sample_count = 1000
 
 		# Append to a non-existing file, behaves same as normal "write"
-		with trsfile.open(self.tmp_path, 'a') as trs_traces:
+		with trsfile.open(self.tmp_path, 'a', padding_mode=TracePadding.AUTO) as trs_traces:
 			self.assertEqual(len(trs_traces), 0)
 
 			# Extend the trace file with 100 traces with each 1000 samples
@@ -138,7 +139,7 @@ class TestCreation(unittest.TestCase):
 
 			trace_count = (t + 1) * 10
 
-			with trsfile.open(self.tmp_path, 'a') as trs_traces:
+			with trsfile.open(self.tmp_path, 'a', padding_mode=TracePadding.AUTO) as trs_traces:
 				self.assertEqual(len(trs_traces), expected_length)
 
 				# Extend the trace file with 100 traces with each 1000 samples
@@ -159,7 +160,7 @@ class TestCreation(unittest.TestCase):
 		sample_count = 1000
 
 		# Write to file exclusively
-		with trsfile.open(self.tmp_path, 'x') as trs_traces:
+		with trsfile.open(self.tmp_path, 'x', padding_mode=TracePadding.AUTO) as trs_traces:
 			self.assertEqual(len(trs_traces), 0)
 
 			# Extend the trace file with 100 traces with each 1000 samples
@@ -184,7 +185,7 @@ class TestCreation(unittest.TestCase):
 		trace_count = 100
 		sample_count = 1000
 
-		with trsfile.open(self.tmp_path, 'w') as trs_traces:
+		with trsfile.open(self.tmp_path, 'w', padding_mode=TracePadding.AUTO) as trs_traces:
 			# Extend empty list
 			trs_traces.extend([])
 			self.assertEqual(len(trs_traces), 0)
@@ -214,7 +215,16 @@ class TestCreation(unittest.TestCase):
 	def test_padding_none(self):
 		sample_count = 1000
 
-		with trsfile.open(self.tmp_path, 'w', padding_mode = TracePadding.NONE) as trs_traces:
+		with trsfile.open(
+			self.tmp_path,
+			'w',
+			padding_mode = TracePadding.NONE,
+			headers = {
+				Header.NUMBER_SAMPLES: sample_count,
+				Header.LENGTH_DATA: 8,
+				Header.SAMPLE_CODING: SampleCoding.FLOAT
+			}
+			) as trs_traces:
 			# This is the length of the trace
 			trs_traces.extend(
 				Trace(
@@ -261,7 +271,7 @@ class TestCreation(unittest.TestCase):
 		sample_count = 1000
 		fmt = SampleCoding.FLOAT
 
-		with trsfile.open(self.tmp_path, 'w') as trs_traces:
+		with trsfile.open(self.tmp_path, 'w', padding_mode=TracePadding.AUTO) as trs_traces:
 			# This is the length everything should be padded/clipped to
 			trs_traces.extend(
 				Trace(

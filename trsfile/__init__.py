@@ -4,12 +4,12 @@ Riscure Inspector trace files.
 """
 
 name        = "trsfile"
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 __author__  = 'Kevin Valk'
 __contact__ =  'valk@riscure.com'
 __all__     = [
-	'trs_open', 'Trace', 'TraceSet', 'SampleCoding', 'Header', 'TracePadding', \
-	'Engine', 'TrsEngine', 'FileEngine',
+'trs_open', 'Trace', 'TraceSet', 'SampleCoding', 'Header', 'TracePadding', \
+'Engine', 'TrsEngine', 'FileEngine',
 ]
 
 from trsfile.trace import Trace
