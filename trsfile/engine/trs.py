@@ -31,7 +31,7 @@ class TrsEngine(Engine):
 	"""
 
 	def __init__(self, path, mode = 'x', **options):
-		self.path = path
+		self.path = path if type(path) is str else str(path)
 		self.handle = None
 		self.file_handle = None
 
@@ -62,9 +62,9 @@ class TrsEngine(Engine):
 				raise TypeError('Cannot change headers when reading TRS files.')
 
 			if not os.path.isfile(self.path):
-				raise FileNotFoundError('No TRS file: \'{0:s}\''.format(path))
+				raise FileNotFoundError('No TRS file: \'{0:s}\''.format(self.path))
 
-			self.file_handle = open(path, 'rb')
+			self.file_handle = open(self.path, 'rb')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_READ)
 			self.read_only = True
 			self.read_headers = True
@@ -75,12 +75,12 @@ class TrsEngine(Engine):
 				raise TypeError('Creation of TRS files requires passing Headers to the constructor.')
 
 			# Sadly, to memory map we need a file with a minimum of length 1
-			self.file_handle = open(path, 'wb')
+			self.file_handle = open(self.path, 'wb')
 			self.file_handle.write(b'\x00')
 			self.file_handle.close()
 
 			# Now we can open it properly
-			self.file_handle = open(path, 'r+b')
+			self.file_handle = open(self.path, 'r+b')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
 
 			self.read_only = False
@@ -95,11 +95,11 @@ class TrsEngine(Engine):
 				raise FileExistsError('TRS file exists: \'{0:s}\''.format(self.path))
 
 			# Sadly, to memory map we need a file with a minimum of length 1
-			self.file_handle = open(path, 'wb')
+			self.file_handle = open(self.path, 'wb')
 			self.file_handle.write(b'\x00')
 			self.file_handle.close()
 
-			self.file_handle = open(path, 'r+b')
+			self.file_handle = open(self.path, 'r+b')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
 			self.read_only = False
 			self.read_headers = False
@@ -115,7 +115,7 @@ class TrsEngine(Engine):
 
 				# We need to create an empty file
 				# Sadly, to memory map we need a file with a minimum of length 1
-				self.file_handle = open(path, 'wb')
+				self.file_handle = open(self.path, 'wb')
 				self.file_handle.write(b'\x00')
 				self.file_handle.close()
 
@@ -125,7 +125,7 @@ class TrsEngine(Engine):
 				raise TypeError('Creation of TRS files requires passing instances of Headers to the constructor.')
 
 			# NOTE: We are using r+b mode because we are essentially updating the file!
-			self.file_handle = open(path, 'r+b')
+			self.file_handle = open(self.path, 'r+b')
 			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
 			self.read_only = False
 
@@ -407,8 +407,8 @@ class TrsEngine(Engine):
 				# Construct the TLV
 				tag = [header.value]
 				if tag_length >= 0x80:
-					tag_length_length = math.ceil(tag_length.bit_length() / 8.0)
-					tag += [0x80 | tag_length_length] + tag_length.to_bytes(tag_length_length, 'little')
+					tag_length_length = (tag_length.bit_length() // 8) + (1 if tag_length.bit_length() % 8 > 0 else 0)
+					tag += bytes([0x80 | tag_length_length]) + tag_length.to_bytes(tag_length_length, 'little')
 				else:
 					tag += [tag_length]
 				tag += tag_value
