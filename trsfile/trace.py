@@ -61,17 +61,17 @@ class Trace:
 	def __getitem__(self, index):
 		return self.samples[index]
 
-	def get_input():
+	def get_input(self):
 		if self.data is None or Header.INPUT_OFFSET not in self.headers or Header.INPUT_LENGTH not in self.headers:
 			return None
 		return self.__subdata(self.headers[Header.INPUT_OFFSET], self.headers[Header.INPUT_LENGTH])
 
-	def get_output():
+	def get_output(self):
 		if self.data is None or Header.OUTPUT_OFFSET not in self.headers or Header.OUTPUT_LENGTH not in self.headers:
 			return None
 		return self.__subdata(self.headers[Header.OUTPUT_OFFSET], self.headers[Header.OUTPUT_LENGTH])
 
-	def get_key():
+	def get_key(self):
 		if self.data is None or Header.KEY_OFFSET not in self.headers or Header.KEY_LENGTH not in self.headers:
 			return None
 		return self.__subdata(self.headers[Header.KEY_OFFSET], self.headers[Header.KEY_LENGTH])
