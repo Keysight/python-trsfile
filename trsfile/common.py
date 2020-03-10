@@ -104,6 +104,11 @@ class Header(Enum):
 	INPUT_LENGTH                     = (0x6E, 'IL', False,    int,          4,      0,                 'Input data length in trace data')
 	OUTPUT_LENGTH                    = (0x6F, 'OL', False,    int,          4,      0,                 'Output data length in trace data')
 	KEY_LENGTH                       = (0x70, 'KL', False,    int,          4,      0,                 'Key data length in trace data')
+	NUMBER_OF_ENABLED_CHANNELS       = (0x71, 'CH', False,    int,          4,      0,                 'Number of oscilloscope channels used for measurement')
+	NUMBER_OF_USED_OSCILLOSCOPES     = (0x72, 'NO', False,    int,          4,      0,                 'Number of oscilloscopes used for measurement')
+	XY_SCAN_WIDTH                    = (0x73, 'WI', False,    int,          4,      0,                 'Number of steps in the \'x\' direction during XY scan')
+	XY_SCAN_HEIGHT                   = (0x74, 'HE', False,    int,          4,      0,                 'Number of steps in the \'y\' direction during XY scan')
+	XY_MEASUREMENTS_PER_SPOT         = (0x75, 'ME', False,    int,          4,      0,                 'Number of consecutive measurements done per spot during XY scan')
 
 	def __new__(cls, tag, tag_name, is_mandatory, type, length, default, description):
 		obj = object.__new__(cls)
