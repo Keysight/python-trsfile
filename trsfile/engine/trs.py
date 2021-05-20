@@ -8,6 +8,9 @@ from trsfile.trace import Trace
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
 
+ASCII_LESS_THAN = 0x3C
+
+
 class TrsEngine(Engine):
 	"""
 	This engine supports .trs files from Riscure as specified in the
@@ -44,6 +47,7 @@ class TrsEngine(Engine):
 		# Initialize empty dictionaries
 		self.headers = {}
 		self.header_locations = {}
+		self.ignore_unknown_tags = options.get('ignore_unknown_tags', False)
 
 		# Get the options
 		headers = options.get('headers', None)
@@ -456,7 +460,7 @@ class TrsEngine(Engine):
 			tag_value_index = self.handle.tell()
 			tag_value = self.handle.read(tag_length) if tag_length > 0 else None
 
-			# Interpreter it
+			# Interpret it
 			header = None
 			if Header.has_value(tag):
 				header = Header(tag)
@@ -471,7 +475,13 @@ class TrsEngine(Engine):
 				elif header.type is SampleCoding:
 					tag_value = SampleCoding(tag_value[0])
 			else:
-				raise NotImplementedError('Warning: tag {tag:02X} is not supported by the library, please submit an issue on Github.'.format(tag=tag))
+				if not self.ignore_unknown_tags:
+					error_msg = f'Warning: tag 0x{tag:02X} is not supported by the library, if you believe ' \
+								'this is an omission, please submit an issue on Github.'
+					if tag == ASCII_LESS_THAN:
+						error_msg += '\nHint: you appear to be opening an XML (or similar) file, ' \
+									 'are you sure you are opening the correct file type?'
+					raise NotImplementedError(error_msg)
 
 			self.headers[tag if header is None else header] = tag_value
 			self.header_locations[tag if header is None else header] = (tag_value_index, tag_length)
