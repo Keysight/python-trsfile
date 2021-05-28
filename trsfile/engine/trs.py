@@ -4,9 +4,12 @@ import struct
 import numpy
 import copy
 
+from io import BytesIO
+import parametermap
 from trsfile.trace import Trace
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
+from trsfile.parametermap import TraceSetParameterMap
 
 ASCII_LESS_THAN = 0x3C
 
@@ -474,6 +477,8 @@ class TrsEngine(Engine):
 					tag_value = tag_value.decode('utf-8')
 				elif header.type is SampleCoding:
 					tag_value = SampleCoding(tag_value[0])
+				elif header.type is parametermap.TraceSetParameterMap:
+					tag_value = TraceSetParameterMap.deserialize(BytesIO(tag_value))
 			else:
 				if not self.ignore_unknown_tags:
 					error_msg = f'Warning: tag 0x{tag:02X} is not supported by the library, if you believe ' \
