@@ -17,6 +17,9 @@ class TraceParameter(ABC):
     def __init__(self, value):
         self.value = value
 
+    def __str__(self):
+        return str(self.value)
+
 
 class TraceSetParameter(TraceParameter):
     @staticmethod
@@ -40,6 +43,8 @@ class ByteArrayParameter(TraceParameter):
         param_value = list(io_bytes.read(ParameterType.BYTE.byte_size * param_length))
         return ByteArrayParameter(param_value)
 
+    def __str__(self):
+        return '0x' + bytes(self.value).hex().upper() if self.value else ''
 
 class DoubleArrayParameter(TraceParameter):
     @staticmethod
