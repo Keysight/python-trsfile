@@ -3,11 +3,17 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from io import BytesIO
 
+from utils import encode_as_short
+
 
 class TraceParameter(ABC):
     @staticmethod
     @abstractmethod
     def deserialize(io_bytes: BytesIO):
+        pass
+
+    @abstractmethod
+    def serialize(self) -> bytes:
         pass
 
     @staticmethod
@@ -27,6 +33,9 @@ class TraceSetParameter(TraceParameter):
         param_type = ParameterType(io_bytes.read(1)[0])
         return param_type.param_class.deserialize(io_bytes)
 
+    def serialize(self) -> bytes:
+        pass
+
 
 class BooleanArrayParameter(TraceParameter):
     @staticmethod
@@ -35,6 +44,14 @@ class BooleanArrayParameter(TraceParameter):
         raw_values = io_bytes.read(ParameterType.BOOL.byte_size * param_length)
         param_value = [bool(x) for x in list(raw_values)]
         return BooleanArrayParameter(param_value)
+
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.BOOL.value)
+        out.extend(encode_as_short(len(self.value)))
+        out.extend(bytes(self.value))
+        return bytes(out)
+
 
 class ByteArrayParameter(TraceParameter):
     @staticmethod
@@ -46,12 +63,28 @@ class ByteArrayParameter(TraceParameter):
     def __str__(self):
         return '0x' + bytes(self.value).hex().upper() if self.value else ''
 
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.BYTE.value)
+        out.extend(encode_as_short(len(self.value)))
+        out.extend(bytes(self.value))
+        return bytes(out)
+
+
 class DoubleArrayParameter(TraceParameter):
     @staticmethod
     def deserialize(io_bytes: BytesIO):
         param_length = TraceParameter.get_parameter_length(io_bytes)
         param_value = list(struct.unpack('<d', io_bytes.read(ParameterType.DOUBLE.byte_size * param_length)))
         return DoubleArrayParameter(param_value)
+
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.DOUBLE.value)
+        out.extend(encode_as_short(len(self.value)))
+        for x in self.value:
+            out.extend(struct.pack('<d', x))
+        return bytes(out)
 
 
 class FloatArrayParameter(TraceParameter):
@@ -61,6 +94,14 @@ class FloatArrayParameter(TraceParameter):
         param_value = list(struct.unpack('<f', io_bytes.read(ParameterType.FLOAT.byte_size * param_length)))
         return FloatArrayParameter(param_value)
 
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.FLOAT.value)
+        out.extend(encode_as_short(len(self.value)))
+        for x in self.value:
+            out.extend(struct.pack('<f', x))
+        return bytes(out)
+
 
 class IntegerArrayParameter(TraceParameter):
     @staticmethod
@@ -68,6 +109,14 @@ class IntegerArrayParameter(TraceParameter):
         param_length = TraceParameter.get_parameter_length(io_bytes)
         param_value = [int.from_bytes(io_bytes.read(ParameterType.INT.byte_size), 'little') for i in range(param_length)]
         return IntegerArrayParameter(param_value)
+
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.INT.value)
+        out.extend(encode_as_short(len(self.value)))
+        for x in self.value:
+            out.extend(struct.pack('<i', x))
+        return bytes(out)
 
 
 class LongArrayParameter(TraceParameter):
@@ -77,6 +126,14 @@ class LongArrayParameter(TraceParameter):
         param_value = [int.from_bytes(io_bytes.read(ParameterType.LONG.byte_size), 'little') for i in range(param_length)]
         return LongArrayParameter(param_value)
 
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.LONG.value)
+        out.extend(encode_as_short(len(self.value)))
+        for x in self.value:
+            out.extend(struct.pack('<l', x))
+        return bytes(out)
+
 
 class ShortArrayParameter(TraceParameter):
     @staticmethod
@@ -85,6 +142,14 @@ class ShortArrayParameter(TraceParameter):
         param_value = [int.from_bytes(io_bytes.read(ParameterType.SHORT.byte_size), 'little') for i in range(param_length)]
         return ShortArrayParameter(param_value)
 
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.SHORT.value)
+        out.extend(encode_as_short(len(self.value)))
+        for x in self.value:
+            out.extend(struct.pack('<h', x))
+        return bytes(out)
+
 
 class StringParameter(TraceParameter):
     @staticmethod
@@ -92,6 +157,14 @@ class StringParameter(TraceParameter):
         param_length = TraceParameter.get_parameter_length(io_bytes)
         param_value = io_bytes.read(ParameterType.BOOL.byte_size * param_length).decode()
         return StringParameter(param_value)
+
+    def serialize(self):
+        out = bytearray()
+        out.append(ParameterType.STRING.value)
+        encoded_string = self.value.encode()
+        out.extend(encode_as_short(len(encoded_string)))
+        out.extend(encoded_string)
+        return bytes(out)
 
 
 class ParameterType(Enum):

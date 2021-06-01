@@ -396,6 +396,8 @@ class TrsEngine(Engine):
 				tag_value = b'\xff' if value is None else value.value.to_bytes(1, 'little')
 			elif header.type is bytes:
 				tag_value = value
+			elif header.type is TraceSetParameterMap:
+				tag_value = value.serialize()
 			else:
 				raise TypeError('Header has a type that can not be serialized')
 

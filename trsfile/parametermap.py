@@ -2,6 +2,7 @@ from collections import OrderedDict
 from io import BytesIO
 
 from traceparameter import TraceSetParameter
+from utils import encode_as_short
 
 
 class TraceSetParameterMap(OrderedDict):
@@ -21,3 +22,12 @@ class TraceSetParameterMap(OrderedDict):
         name = raw.read(name_length).decode()
         return name
 
+    def serialize(self):
+        out = bytearray()
+        number_of_entries = len(self)
+        out.extend(encode_as_short(number_of_entries))
+        for name, value in self.items():
+            out.extend(encode_as_short(len(name)))
+            out.extend(name.encode())
+            out.extend(value.serialize())
+        return bytes(out)
