@@ -1,11 +1,19 @@
 from collections import OrderedDict
 from io import BytesIO
 
-from traceparameter import TraceSetParameter
+from traceparameter import TraceSetParameter, TraceParameter
 from utils import encode_as_short
 
 
 class TraceSetParameterMap(OrderedDict):
+    def __setitem__(self, key, value):
+        if not type(key) is str:
+            raise TypeError('The key for an item in a TraceSetParameterMap must be of type \'str\'.')
+        if not isinstance(value, TraceParameter) or type(value) is TraceSetParameter:
+            raise TypeError('The value for a TraceSetParameterMap entry must be a specific subclass'
+                            ' of TraceParameter (e.g. ByteArrayParameter).')
+        super().__setitem__(key, value)
+
     @staticmethod
     def deserialize(raw: BytesIO):
         result = TraceSetParameterMap()
