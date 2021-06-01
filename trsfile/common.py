@@ -1,6 +1,6 @@
 from enum import Enum
 
-from parametermap import TraceSetParameterMap
+from trsfile.parametermap import TraceSetParameterMap
 
 
 class TracePadding(Enum):

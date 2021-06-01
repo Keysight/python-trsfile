@@ -1,8 +1,8 @@
 from collections import OrderedDict
 from io import BytesIO
 
-from traceparameter import TraceSetParameter, TraceParameter
-from utils import encode_as_short
+from trsfile.traceparameter import TraceSetParameter, TraceParameter
+from trsfile.utils import encode_as_short
 
 
 class TraceSetParameterMap(OrderedDict):

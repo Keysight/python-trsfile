@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from io import BytesIO
 
-from utils import encode_as_short
+from trsfile.utils import encode_as_short
 
 
 class TraceParameter(ABC):
