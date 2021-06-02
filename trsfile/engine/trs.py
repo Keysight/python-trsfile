@@ -482,8 +482,8 @@ class TrsEngine(Engine):
 					tag_value = TraceSetParameterMap.deserialize(BytesIO(tag_value))
 			else:
 				if not self.ignore_unknown_tags:
-					error_msg = f'Warning: tag 0x{tag:02X} is not supported by the library, if you believe ' \
-								'this is an omission, please submit an issue on Github.'
+					error_msg = 'Warning: tag 0x{tag:02X} is not supported by the library, if you believe ' \
+								'this is an omission, please submit an issue on Github.'.format(tag=tag)
 					if tag == ASCII_LESS_THAN:
 						error_msg += '\nHint: you appear to be opening an XML (or similar) file, ' \
 									 'are you sure you are opening the correct file type?'
