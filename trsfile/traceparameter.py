@@ -107,7 +107,7 @@ class IntegerArrayParameter(TraceParameter):
     @staticmethod
     def deserialize(io_bytes: BytesIO):
         param_length = TraceParameter.get_parameter_length(io_bytes)
-        param_value = [int.from_bytes(io_bytes.read(ParameterType.INT.byte_size), 'little') for i in range(param_length)]
+        param_value = list(struct.unpack('<i', io_bytes.read(ParameterType.INT.byte_size * param_length)))
         return IntegerArrayParameter(param_value)
 
     def serialize(self):
@@ -123,7 +123,7 @@ class LongArrayParameter(TraceParameter):
     @staticmethod
     def deserialize(io_bytes: BytesIO):
         param_length = TraceParameter.get_parameter_length(io_bytes)
-        param_value = [int.from_bytes(io_bytes.read(ParameterType.LONG.byte_size), 'little') for i in range(param_length)]
+        param_value = list(struct.unpack('<q', io_bytes.read(ParameterType.LONG.byte_size * param_length)))
         return LongArrayParameter(param_value)
 
     def serialize(self):
@@ -131,7 +131,7 @@ class LongArrayParameter(TraceParameter):
         out.append(ParameterType.LONG.value)
         out.extend(encode_as_short(len(self.value)))
         for x in self.value:
-            out.extend(struct.pack('<l', x))
+            out.extend(struct.pack('<q', x))
         return bytes(out)
 
 
@@ -139,7 +139,7 @@ class ShortArrayParameter(TraceParameter):
     @staticmethod
     def deserialize(io_bytes: BytesIO):
         param_length = TraceParameter.get_parameter_length(io_bytes)
-        param_value = [int.from_bytes(io_bytes.read(ParameterType.SHORT.byte_size), 'little') for i in range(param_length)]
+        param_value = list(struct.unpack('<h', io_bytes.read(ParameterType.SHORT.byte_size * param_length)))
         return ShortArrayParameter(param_value)
 
     def serialize(self):

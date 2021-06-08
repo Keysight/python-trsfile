@@ -4,6 +4,9 @@ from io import BytesIO
 from trsfile.traceparameter import TraceSetParameter, TraceParameter
 from trsfile.utils import encode_as_short
 
+LITTLE_ENDIAN_ORDER = 'little'
+UTF_8 = 'utf-8'
+
 
 class TraceSetParameterMap(OrderedDict):
     def __setitem__(self, key, value):
@@ -17,7 +20,7 @@ class TraceSetParameterMap(OrderedDict):
     @staticmethod
     def deserialize(raw: BytesIO):
         result = TraceSetParameterMap()
-        number_of_entries = int.from_bytes(raw.read(2), 'little')
+        number_of_entries = int.from_bytes(raw.read(2), LITTLE_ENDIAN_ORDER)
         for i in range(number_of_entries):
             name = TraceSetParameterMap.get_parameter_name(raw)
             value = TraceSetParameter.deserialize(raw)
@@ -26,8 +29,8 @@ class TraceSetParameterMap(OrderedDict):
 
     @staticmethod
     def get_parameter_name(raw):
-        name_length = int.from_bytes(raw.read(2), 'little')
-        name = raw.read(name_length).decode()
+        name_length = int.from_bytes(raw.read(2), LITTLE_ENDIAN_ORDER)
+        name = raw.read(name_length).decode(UTF_8)
         return name
 
     def serialize(self):
@@ -36,6 +39,6 @@ class TraceSetParameterMap(OrderedDict):
         out.extend(encode_as_short(number_of_entries))
         for name, value in self.items():
             out.extend(encode_as_short(len(name)))
-            out.extend(name.encode())
+            out.extend(name.encode(UTF_8))
             out.extend(value.serialize())
         return bytes(out)
