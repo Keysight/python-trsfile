@@ -4,9 +4,14 @@ import struct
 import numpy
 import copy
 
+from io import BytesIO
 from trsfile.trace import Trace
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
+from trsfile.parametermap import TraceSetParameterMap
+
+ASCII_LESS_THAN = 0x3C
+
 
 class TrsEngine(Engine):
 	"""
@@ -44,6 +49,7 @@ class TrsEngine(Engine):
 		# Initialize empty dictionaries
 		self.headers = {}
 		self.header_locations = {}
+		self.ignore_unknown_tags = options.get('ignore_unknown_tags', False)
 
 		# Get the options
 		headers = options.get('headers', None)
@@ -389,6 +395,8 @@ class TrsEngine(Engine):
 				tag_value = b'\xff' if value is None else value.value.to_bytes(1, 'little')
 			elif header.type is bytes:
 				tag_value = value
+			elif header.type is TraceSetParameterMap:
+				tag_value = value.serialize()
 			else:
 				raise TypeError('Header has a type that can not be serialized')
 
@@ -456,7 +464,7 @@ class TrsEngine(Engine):
 			tag_value_index = self.handle.tell()
 			tag_value = self.handle.read(tag_length) if tag_length > 0 else None
 
-			# Interpreter it
+			# Interpret it
 			header = None
 			if Header.has_value(tag):
 				header = Header(tag)
@@ -470,8 +478,16 @@ class TrsEngine(Engine):
 					tag_value = tag_value.decode('utf-8')
 				elif header.type is SampleCoding:
 					tag_value = SampleCoding(tag_value[0])
+				elif header.type is TraceSetParameterMap:
+					tag_value = TraceSetParameterMap.deserialize(BytesIO(tag_value))
 			else:
-				raise NotImplementedError('Warning: tag {tag:02X} is not supported by the library, please submit an issue on Github.'.format(tag=tag))
+				if not self.ignore_unknown_tags:
+					error_msg = 'Warning: tag 0x{tag:02X} is not supported by the library, if you believe ' \
+								'this is an omission, please submit an issue on Github.'.format(tag=tag)
+					if tag == ASCII_LESS_THAN:
+						error_msg += '\nHint: you appear to be opening an XML (or similar) file, ' \
+									 'are you sure you are opening the correct file type?'
+					raise NotImplementedError(error_msg)
 
 			self.headers[tag if header is None else header] = tag_value
 			self.header_locations[tag if header is None else header] = (tag_value_index, tag_length)

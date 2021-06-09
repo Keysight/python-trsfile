@@ -1,5 +1,8 @@
 from enum import Enum
 
+from trsfile.parametermap import TraceSetParameterMap
+
+
 class TracePadding(Enum):
 	"""Defines the padding mode of the samples in each trace. This can be helpful
 	when not all traces will be the same length. This can be set in
@@ -78,6 +81,7 @@ class Header(Enum):
 	SCALE_Y                          = (0x4C, 'YS', False,    float,        4,      1,                 'Scale value for Y-axis')
 	TRACE_OFFSET                     = (0x4D, 'TO', False,    int,          4,      0,                 'Trace offset for displaying trace numbers')
 	LOGARITHMIC_SCALE                = (0x4E, 'LS', False,    int,          1,      0,                 'Logarithmic scale')
+	TRS_VERSION                      = (0x4F, 'VS', False,    int,          1,      0,                 'The version of the traceset format')
 	ACQUISITION_RANGE_OF_SCOPE       = (0x55, 'RG', False,    float,        4,      0,                 'Range of the scope used to perform acquisition')
 	ACQUISITION_COUPLING_OF_SCOPE    = (0x56, 'CL', False,    int,          4,      0,                 'Coupling of the scope used to perform acquisition')
 	ACQUISITION_OFFSET_OF_SCOPE      = (0x57, 'OS', False,    float,        4,      0,                 'Offset of the scope used to perform acquisition')
@@ -109,6 +113,7 @@ class Header(Enum):
 	XY_SCAN_WIDTH                    = (0x73, 'WI', False,    int,          4,      0,                 'Number of steps in the \'x\' direction during XY scan')
 	XY_SCAN_HEIGHT                   = (0x74, 'HE', False,    int,          4,      0,                 'Number of steps in the \'y\' direction during XY scan')
 	XY_MEASUREMENTS_PER_SPOT         = (0x75, 'ME', False,    int,          4,      0,                 'Number of consecutive measurements done per spot during XY scan')
+	TRACE_SET_PARAMETERS             = (0x76, "GP", False, TraceSetParameterMap, 0, TraceSetParameterMap(b''), "The set of custom global trace set parameters")
 
 	def __new__(cls, tag, tag_name, is_mandatory, type, length, default, description):
 		obj = object.__new__(cls)
