@@ -2,9 +2,8 @@ from collections import OrderedDict
 from io import BytesIO
 
 from trsfile.traceparameter import TraceSetParameter, TraceParameter
-from trsfile.utils import encode_as_short
+from trsfile.utils import encode_as_short, read_parameter_name, read_short
 
-LITTLE_ENDIAN_ORDER = 'little'
 UTF_8 = 'utf-8'
 
 
@@ -20,18 +19,12 @@ class TraceSetParameterMap(OrderedDict):
     @staticmethod
     def deserialize(raw: BytesIO):
         result = TraceSetParameterMap()
-        number_of_entries = int.from_bytes(raw.read(2), LITTLE_ENDIAN_ORDER)
+        number_of_entries = read_short(raw)
         for i in range(number_of_entries):
-            name = TraceSetParameterMap.get_parameter_name(raw)
+            name = read_parameter_name(raw)
             value = TraceSetParameter.deserialize(raw)
             result[name] = value
         return result
-
-    @staticmethod
-    def get_parameter_name(raw):
-        name_length = int.from_bytes(raw.read(2), LITTLE_ENDIAN_ORDER)
-        name = raw.read(name_length).decode(UTF_8)
-        return name
 
     def serialize(self):
         out = bytearray()
