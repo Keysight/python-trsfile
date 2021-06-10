@@ -8,7 +8,7 @@ from io import BytesIO
 from trsfile.trace import Trace
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
-from trsfile.parametermap import TraceSetParameterMap
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap
 
 ASCII_LESS_THAN = 0x3C
 
@@ -480,6 +480,8 @@ class TrsEngine(Engine):
 					tag_value = SampleCoding(tag_value[0])
 				elif header.type is TraceSetParameterMap:
 					tag_value = TraceSetParameterMap.deserialize(BytesIO(tag_value))
+				elif header.type is TraceParameterDefinitionMap:
+					tag_value = TraceParameterDefinitionMap.deserialize(BytesIO(tag_value))
 			else:
 				if not self.ignore_unknown_tags:
 					error_msg = 'Warning: tag 0x{tag:02X} is not supported by the library, if you believe ' \

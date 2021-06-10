@@ -1,6 +1,6 @@
 from enum import Enum
 
-from trsfile.parametermap import TraceSetParameterMap
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap
 
 
 class TracePadding(Enum):
@@ -114,6 +114,7 @@ class Header(Enum):
 	XY_SCAN_HEIGHT                   = (0x74, 'HE', False,    int,          4,      0,                 'Number of steps in the \'y\' direction during XY scan')
 	XY_MEASUREMENTS_PER_SPOT         = (0x75, 'ME', False,    int,          4,      0,                 'Number of consecutive measurements done per spot during XY scan')
 	TRACE_SET_PARAMETERS             = (0x76, "GP", False, TraceSetParameterMap, 0, TraceSetParameterMap(b''), "The set of custom global trace set parameters")
+	TRACE_PARAMETER_DEFINITIONS      = (0x77, "LP", False, TraceParameterDefinitionMap, 0, TraceParameterDefinitionMap(), "The set of custom local trace parameters")
 
 	def __new__(cls, tag, tag_name, is_mandatory, type, length, default, description):
 		obj = object.__new__(cls)

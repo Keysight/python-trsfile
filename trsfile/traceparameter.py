@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from io import BytesIO
 
-from trsfile.utils import encode_as_short
+from trsfile.utils import encode_as_short, read_short
 
 
 class TraceParameter(ABC):
@@ -183,3 +183,21 @@ class ParameterType(Enum):
     DOUBLE = (0x18, 8, DoubleArrayParameter)
     STRING = (0x20, 1, StringParameter)
     BOOL   = (0x31, 1, BooleanArrayParameter)
+
+
+class TraceParameterDefinition:
+    def __init__(self, param_type: ParameterType, length: int, offset: int):
+        self.param_type = param_type
+        self.length = length
+        self.offset = offset
+
+    def __repr__(self):
+        return '<TraceParameterDefinition: {} of length {} at offset {}>'.format(self.param_type.param_class.__name__,
+                                                                                 self.length, self.offset)
+
+    @staticmethod
+    def deserialize(io_bytes: BytesIO):
+        param_type = ParameterType(io_bytes.read(1)[0])
+        length = read_short(io_bytes)
+        offset = read_short(io_bytes)
+        return TraceParameterDefinition(param_type, length, offset)
