@@ -31,8 +31,9 @@ class TraceSetParameterMap(OrderedDict):
         number_of_entries = len(self)
         out.extend(encode_as_short(number_of_entries))
         for name, value in self.items():
-            out.extend(encode_as_short(len(name)))
-            out.extend(name.encode(UTF_8))
+            encoded_name = name.encode(UTF_8)
+            out.extend(encode_as_short(len(encoded_name)))
+            out.extend(encoded_name)
             out.extend(value.serialize())
         return bytes(out)
 
