@@ -1,16 +1,13 @@
-from collections import OrderedDict
 from io import BytesIO
 
 from trsfile.traceparameter import TraceSetParameter, TraceParameter, TraceParameterDefinition
-from trsfile.utils import encode_as_short, read_parameter_name, read_short
+from trsfile.utils import *
 
 UTF_8 = 'utf-8'
 
 
-class TraceSetParameterMap(OrderedDict):
+class TraceSetParameterMap(StringKeyOrderedDict):
     def __setitem__(self, key, value):
-        if not type(key) is str:
-            raise TypeError('The key for an item in a TraceSetParameterMap must be of type \'str\'.')
         if not isinstance(value, TraceParameter) or type(value) is TraceSetParameter:
             raise TypeError('The value for a TraceSetParameterMap entry must be a specific subclass'
                             ' of TraceParameter (e.g. ByteArrayParameter).')
@@ -38,10 +35,8 @@ class TraceSetParameterMap(OrderedDict):
         return bytes(out)
 
 
-class TraceParameterDefinitionMap(OrderedDict):
+class TraceParameterDefinitionMap(StringKeyOrderedDict):
     def __setitem__(self, key, value):
-        if not type(key) is str:
-            raise TypeError('The key for an item in a TraceParameterDefinitionMap must be of type \'str\'.')
         if type(value) is not TraceParameterDefinition:
             raise TypeError('The value for an entry in a TraceParameterDefinitionMap must be of '
                             'type TraceParameterDefinition')
