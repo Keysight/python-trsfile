@@ -202,7 +202,7 @@ class FileEngine(Engine):
 				data = b''
 
 			# Create trace and make sure headers point to our dict
-			traces.append(Trace(sample_coding, samples, data, title, self.headers))
+			traces.append(Trace(sample_coding, samples, data, title=title, headers=self.headers))
 
 		return traces
 

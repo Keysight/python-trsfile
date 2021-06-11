@@ -1,4 +1,6 @@
 import numpy
+
+from trsfile.parametermap import TraceParameterMap
 from trsfile.common import Header, SampleCoding
 
 class Trace:
@@ -10,9 +12,10 @@ class Trace:
 	provided :py:obj:`sample_coding`.
 	"""
 
-	def __init__(self, sample_coding, samples, data = b'', title = 'trace', headers = {}):
+	def __init__(self, sample_coding, samples, data=b'', parameters=None, title='trace', headers={}):
 		self.title = title
 		self.data = data if data is not None else b''
+		self.parameters = parameters if parameters else TraceParameterMap()
 
 		# Obtain sample coding
 		if not isinstance(sample_coding, SampleCoding):

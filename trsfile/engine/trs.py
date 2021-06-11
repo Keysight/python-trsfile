@@ -8,7 +8,7 @@ from io import BytesIO
 from trsfile.trace import Trace
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
 
 ASCII_LESS_THAN = 0x3C
 
@@ -301,18 +301,31 @@ class TrsEngine(Engine):
 			else:
 				title = ''     # No title
 
-			# Read data
-			if Header.LENGTH_DATA in self.headers:
-				data = self.handle.read(self.headers[Header.LENGTH_DATA])
-			else:
-				data = bytes() # No data
+			data, parameters = self.read_parameter_data()
 
 			# Read all the samples
 			samples = numpy.frombuffer(self.handle.read(self.trace_length), self.headers[Header.SAMPLE_CODING].format, self.headers[Header.NUMBER_SAMPLES])
 
-			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, data, title, self.headers))
+			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, data, parameters, title, self.headers))
 
 		return traces
+
+	def read_parameter_data(self):
+		# Read the trace parameters
+		if Header.TRS_VERSION in self.headers \
+				and self.headers[Header.TRS_VERSION] > 1 \
+				and Header.TRACE_PARAMETER_DEFINITIONS in self.headers:
+			definitions = self.headers[Header.TRACE_PARAMETER_DEFINITIONS]
+			data = self.handle.read(definitions.get_total_size())
+			parameters = TraceParameterMap.deserialize(data, definitions)
+		# Read (legacy) data
+		elif Header.LENGTH_DATA in self.headers:
+			data = self.handle.read(self.headers[Header.LENGTH_DATA])
+			parameters = None
+		else:
+			data = bytes()  # No data
+			parameters = None
+		return data, parameters
 
 	def close(self):
 		"""Closes the open file handle if it is opened"""
