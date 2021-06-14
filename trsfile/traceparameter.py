@@ -147,7 +147,8 @@ class ShortArrayParameter(TraceParameter):
 class StringParameter(TraceParameter):
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
-        param_value = io_bytes.read(ParameterType.BOOL.byte_size * param_length).decode()
+        bytes_read = io_bytes.read(ParameterType.STRING.byte_size * param_length)
+        param_value = bytes_read.decode()
         return StringParameter(param_value)
 
     def serialize(self):
