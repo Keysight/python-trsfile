@@ -1,7 +1,7 @@
 from io import BytesIO
 from unittest import TestCase
 
-from trsfile.parametermap import TraceSetParameterMap
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
 from trsfile.traceparameter import *
 
 
@@ -43,3 +43,54 @@ class TestTraceSetParameterMap(TestCase):
         map = self.create_tracesetparametermap()
         serialized = map.serialize()
         self.assertEqual(serialized, self.SERIALIZED_MAP)
+
+
+class TestTraceParameterDefinitionMap(TestCase):
+    SERIALIZED_DEFINITION = b'\x03\x00' \
+                            b'\x05\x00INPUT\x01\x10\x00\x00\x00' \
+                            b'\x05\x00TITLE\x20\x0d\x00\x10\x00' \
+                            b'\x06\x00\xe4\xb8\xad\xe6\x96\x87\x20\x0f\x00\x1d\x00'
+
+    @staticmethod
+    def create_parameterdefinitionmap() -> TraceParameterDefinitionMap:
+        map = TraceParameterDefinitionMap()
+        map['INPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
+        map['TITLE'] = TraceParameterDefinition(ParameterType.STRING, 13, 16)
+        map['中文'] = TraceParameterDefinition(ParameterType.STRING, 15, 29)
+        return map
+
+    def test_get_total_size(self):
+        size = self.create_parameterdefinitionmap().get_total_size()
+        self.assertEqual(size, 44)
+
+    def test_deserialize(self):
+        self.assertDictEqual(TraceParameterDefinitionMap.deserialize(BytesIO(self.SERIALIZED_DEFINITION)),
+                             self.create_parameterdefinitionmap())
+
+    def test_serialize(self):
+        self.assertEqual(self.create_parameterdefinitionmap().serialize(),
+                         self.SERIALIZED_DEFINITION)
+
+
+class TestTraceParameterMap(TestCase):
+    CAFEBABE = bytes.fromhex('cafebabedeadbeef0102030405060708')
+    SERIALIZED_MAP = CAFEBABE + \
+                     b'Hello, world!' \
+                     b'\xe4\xbd\xa0\xe5\xa5\xbd\xef\xbc\x8c\xe4\xb8\x96\xe7\x95\x8c'
+
+    @staticmethod
+    def create_parametermap() -> TraceParameterMap:
+        map = TraceParameterMap()
+        map['INPUT'] = ByteArrayParameter(list(TestTraceParameterMap.CAFEBABE))
+        map['TITLE'] = StringParameter('Hello, world!')
+        map['中文'] = StringParameter('你好，世界')
+        return map
+
+    def test_deserialize(self):
+        self.assertDictEqual(
+            TraceParameterMap.deserialize(self.SERIALIZED_MAP,
+                                          TestTraceParameterDefinitionMap.create_parameterdefinitionmap()),
+            self.create_parametermap())
+
+    def test_serialize(self):
+        self.assertEqual(self.SERIALIZED_MAP, self.create_parametermap().serialize())

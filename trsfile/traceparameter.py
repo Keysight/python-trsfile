@@ -175,6 +175,11 @@ class TraceParameterDefinition:
         self.length = length
         self.offset = offset
 
+    def __eq__(self, other):
+        return self.param_type == other.param_type \
+               and self.length == other.length \
+               and self. offset == other.offset
+
     def __repr__(self):
         return '<TraceParameterDefinition: {} of length {} at offset {}>'.format(self.param_type.param_class.__name__,
                                                                                  self.length, self.offset)
@@ -185,3 +190,10 @@ class TraceParameterDefinition:
         length = read_short(io_bytes)
         offset = read_short(io_bytes)
         return TraceParameterDefinition(param_type, length, offset)
+
+    def serialize(self):
+        out = bytearray()
+        out.append(self.param_type.value)
+        out.extend(encode_as_short(self.length))
+        out.extend(encode_as_short(self.offset))
+        return out

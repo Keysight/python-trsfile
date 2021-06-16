@@ -65,6 +65,16 @@ class TraceParameterDefinitionMap(StringKeyOrderedDict):
             result[name] = value
         return result
 
+    def serialize(self):
+        out = bytearray()
+        out.extend(encode_as_short(len(self)))
+        for name, value in self.items():
+            encoded_name = name.encode(UTF_8)
+            out.extend(encode_as_short(len(encoded_name)))
+            out.extend(encoded_name)
+            out.extend(value.serialize())
+        return out
+
 
 class TraceParameterMap(StringKeyOrderedDict):
     def __setitem__(self, key, value):
@@ -82,3 +92,9 @@ class TraceParameterMap(StringKeyOrderedDict):
             param = val.param_type.param_class.deserialize(io_bytes, val.length)
             result[key] = param
         return result
+
+    def serialize(self):
+        out = bytearray()
+        for val in self.values():
+            out.extend(val.serialize())
+        return out
