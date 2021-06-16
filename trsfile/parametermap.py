@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from trsfile.traceparameter import TraceSetParameter, TraceParameter, TraceParameterDefinition
+from trsfile.traceparameter import TraceSetParameter, TraceParameter, TraceParameterDefinition, ParameterType
 from trsfile.utils import *
 
 UTF_8 = 'utf-8'
@@ -27,11 +27,18 @@ class TraceSetParameterMap(StringKeyOrderedDict):
         out = bytearray()
         number_of_entries = len(self)
         out.extend(encode_as_short(number_of_entries))
-        for name, value in self.items():
+        for name, param in self.items():
             encoded_name = name.encode(UTF_8)
             out.extend(encode_as_short(len(encoded_name)))
             out.extend(encoded_name)
-            out.extend(value.serialize())
+
+            param_type = ParameterType.from_class(type(param))
+            out.append(param_type.value)
+            serialized_value = param.serialize()
+            length = len(serialized_value) if param_type is ParameterType.STRING else len(param.value)
+            out.extend(encode_as_short(length))
+
+            out.extend(serialized_value)
         return bytes(out)
 
 

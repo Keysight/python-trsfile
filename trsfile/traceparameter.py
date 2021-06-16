@@ -46,8 +46,6 @@ class BooleanArrayParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.BOOL.value)
-        out.extend(encode_as_short(len(self.value)))
         out.extend(bytes(self.value))
         return bytes(out)
 
@@ -63,8 +61,6 @@ class ByteArrayParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.BYTE.value)
-        out.extend(encode_as_short(len(self.value)))
         out.extend(bytes(self.value))
         return bytes(out)
 
@@ -77,8 +73,6 @@ class DoubleArrayParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.DOUBLE.value)
-        out.extend(encode_as_short(len(self.value)))
         for x in self.value:
             out.extend(struct.pack('<d', x))
         return bytes(out)
@@ -92,8 +86,6 @@ class FloatArrayParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.FLOAT.value)
-        out.extend(encode_as_short(len(self.value)))
         for x in self.value:
             out.extend(struct.pack('<f', x))
         return bytes(out)
@@ -107,8 +99,6 @@ class IntegerArrayParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.INT.value)
-        out.extend(encode_as_short(len(self.value)))
         for x in self.value:
             out.extend(struct.pack('<i', x))
         return bytes(out)
@@ -122,8 +112,6 @@ class LongArrayParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.LONG.value)
-        out.extend(encode_as_short(len(self.value)))
         for x in self.value:
             out.extend(struct.pack('<q', x))
         return bytes(out)
@@ -137,8 +125,6 @@ class ShortArrayParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.SHORT.value)
-        out.extend(encode_as_short(len(self.value)))
         for x in self.value:
             out.extend(struct.pack('<h', x))
         return bytes(out)
@@ -153,9 +139,7 @@ class StringParameter(TraceParameter):
 
     def serialize(self):
         out = bytearray()
-        out.append(ParameterType.STRING.value)
         encoded_string = self.value.encode()
-        out.extend(encode_as_short(len(encoded_string)))
         out.extend(encoded_string)
         return bytes(out)
 
@@ -167,6 +151,13 @@ class ParameterType(Enum):
         obj.byte_size = byte_size
         obj.param_class = param_class
         return obj
+
+    @staticmethod
+    def from_class(cls):
+        for val in ParameterType:
+            if cls is val.param_class:
+                return val
+        raise TypeError('{} is not valid ParameterType class'.format(cls.__name__))
 
     BYTE   = (0x01, 1, ByteArrayParameter)
     SHORT  = (0x02, 2, ShortArrayParameter)
