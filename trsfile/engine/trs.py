@@ -6,6 +6,7 @@ import copy
 
 from io import BytesIO
 from trsfile.trace import Trace
+from trsfile.traceparameter import ByteArrayParameter
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
 from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
@@ -181,9 +182,9 @@ class TrsEngine(Engine):
 				update_headers[Header.NUMBER_SAMPLES] = max(lengths)
 
 			if self.headers[Header.LENGTH_DATA] is None:
-				if len(set([len(trace.data) for trace in traces])) > 1:
+				if len(set([len(trace.parameters.serialize()) for trace in traces])) > 1:
 					raise TypeError('Traces have different data length, this is not supported in TRS files')
-				update_headers[Header.LENGTH_DATA] = len(traces[0].data)
+				update_headers[Header.LENGTH_DATA] = len(traces[0].parameters.serialize())
 
 			if self.headers[Header.SAMPLE_CODING] is None:
 				if len(set([trace.sample_coding for trace in traces])) > 1:
@@ -231,12 +232,8 @@ class TrsEngine(Engine):
 			if len(title) < self.headers[Header.TITLE_SPACE]:
 				self.file_handle.write(bytes(self.headers[Header.TITLE_SPACE] - len(title)))
 
-			# Data and data padding
-			if self.padding_mode == TracePadding.NONE and len(trace.data) > self.headers[Header.LENGTH_DATA]:
-				raise TypeError('Trace data is longer than available data space')
-			self.file_handle.write(trace.data[0:self.headers[Header.LENGTH_DATA]])
-			if len(trace.data) < self.headers[Header.LENGTH_DATA]:
-				self.file_handle.write(bytes(self.headers[Header.LENGTH_DATA] - len(trace.data)))
+			# Parameters
+			self.file_handle.write(trace.parameters.serialize())
 
 			# Automatic truncate
 			trace.samples[:self.headers[Header.NUMBER_SAMPLES]].tofile(self.file_handle)
@@ -301,12 +298,12 @@ class TrsEngine(Engine):
 			else:
 				title = ''     # No title
 
-			data, parameters = self.read_parameter_data()
+			parameters = self.read_parameter_data()
 
 			# Read all the samples
 			samples = numpy.frombuffer(self.handle.read(self.trace_length), self.headers[Header.SAMPLE_CODING].format, self.headers[Header.NUMBER_SAMPLES])
 
-			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, data, parameters, title, self.headers))
+			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, parameters, title, self.headers))
 
 		return traces
 
@@ -318,14 +315,13 @@ class TrsEngine(Engine):
 			definitions = self.headers[Header.TRACE_PARAMETER_DEFINITIONS]
 			data = self.handle.read(definitions.get_total_size())
 			parameters = TraceParameterMap.deserialize(data, definitions)
-		# Read (legacy) data
-		elif Header.LENGTH_DATA in self.headers:
-			data = self.handle.read(self.headers[Header.LENGTH_DATA])
-			parameters = None
 		else:
-			data = bytes()  # No data
-			parameters = None
-		return data, parameters
+			parameters = TraceParameterMap()
+			# Read (legacy) data
+			if Header.LENGTH_DATA in self.headers:
+				data = self.handle.read(self.headers[Header.LENGTH_DATA])
+				parameters['LEGACY_DATA'] = ByteArrayParameter(data)
+		return parameters
 
 	def close(self):
 		"""Closes the open file handle if it is opened"""

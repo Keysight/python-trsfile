@@ -12,10 +12,11 @@ class Trace:
 	provided :py:obj:`sample_coding`.
 	"""
 
-	def __init__(self, sample_coding, samples, data=b'', parameters=None, title='trace', headers={}):
+	def __init__(self, sample_coding, samples, parameters=TraceParameterMap(), title='trace', headers={}):
 		self.title = title
-		self.data = data if data is not None else b''
-		self.parameters = parameters if parameters else TraceParameterMap()
+		self.parameters = parameters
+		if not type(self.parameters) is TraceParameterMap:
+			raise TypeError('Trace parameter data must be supplied as a TraceParameterMap')
 
 		# Obtain sample coding
 		if not isinstance(sample_coding, SampleCoding):
@@ -65,41 +66,45 @@ class Trace:
 		return self.samples[index]
 
 	def get_input(self):
-		if self.data is None or Header.INPUT_OFFSET not in self.headers or Header.INPUT_LENGTH not in self.headers:
+		if self.parameters['INPUT']:
+			return self.parameters['INPUT'].value
+		if self.parameters['LEGACY_DATA'] is None \
+				or Header.INPUT_OFFSET not in self.headers \
+				or Header.INPUT_LENGTH not in self.headers:
 			return None
 		return self.__subdata(self.headers[Header.INPUT_OFFSET], self.headers[Header.INPUT_LENGTH])
 
 	def get_output(self):
-		if self.data is None or Header.OUTPUT_OFFSET not in self.headers or Header.OUTPUT_LENGTH not in self.headers:
+		if self.parameters['OUTPUT']:
+			return self.parameters['OUTPUT'].value
+		if self.parameters['LEGACY_DATA'] is None \
+				or Header.OUTPUT_OFFSET not in self.headers \
+				or Header.OUTPUT_LENGTH not in self.headers:
 			return None
 		return self.__subdata(self.headers[Header.OUTPUT_OFFSET], self.headers[Header.OUTPUT_LENGTH])
 
 	def get_key(self):
-		if self.data is None or Header.KEY_OFFSET not in self.headers or Header.KEY_LENGTH not in self.headers:
+		if self.parameters['KEY']:
+			return self.parameters['KEY'].value
+		if self.parameters['LEGACY_DATA'] is None \
+				or Header.KEY_OFFSET not in self.headers \
+				or Header.KEY_LENGTH not in self.headers:
 			return None
 		return self.__subdata(self.headers[Header.KEY_OFFSET], self.headers[Header.KEY_LENGTH])
 
 	def __subdata(self, offset, length):
-		return self.data[offset : offset + length]
+		return self.parameters['LEGACY_DATA'].value[offset : offset + length]
 
 	def __repr__(self):
-		# Represent the data
-		if len(self.data) >= 2:
-			data = ', {0:02X}...{1:01X}'.format(self.data[0], self.data[-1])
-		elif len(self.data) == 1:
-			data = ', {0:02X}'.format(self.data[0])
-		else:
-			data = ''
-
-		# Return the representation
-		return '<Trace: {0:d}, {1:s}{2:s}>'.format(len(self.samples), self.title.strip(), data)
+		return '<Trace {0:s}: {1:d} samples, {2:d} parameters>'.format(self.title.strip(), len(self.samples),
+																	   len(self.parameters))
 
 	def __eq__(self, other):
 		"""Compares two traces for equivalence"""
 		if isinstance(other, Trace):
 			return \
 				self.title == other.title and \
-				self.data == other.data and \
+				self.parameters == other.parameters and \
 				self.sample_coding == other.sample_coding and \
 				numpy.array_equal(self.samples, other.samples) and \
 				self.headers == other.headers

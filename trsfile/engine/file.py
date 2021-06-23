@@ -4,9 +4,12 @@ import numpy
 import pickle
 from pathlib import Path
 
-from trsfile.trace import Trace
-from trsfile.common import Header, SampleCoding, TracePadding
+from trsfile.common import Header, SampleCoding
 from trsfile.engine.engine import Engine
+from trsfile.parametermap import TraceParameterMap
+from trsfile.trace import Trace
+from trsfile.traceparameter import ByteArrayParameter
+
 
 class FileEngine(Engine):
 	"""
@@ -201,8 +204,10 @@ class FileEngine(Engine):
 			else:
 				data = b''
 
+			parameters = TraceParameterMap()
+			parameters['LEGACY_DATA'] = ByteArrayParameter(data)
 			# Create trace and make sure headers point to our dict
-			traces.append(Trace(sample_coding, samples, data, title=title, headers=self.headers))
+			traces.append(Trace(sample_coding, samples, parameters, title, self.headers))
 
 		return traces
 
@@ -238,9 +243,9 @@ class FileEngine(Engine):
 				tmp_file.write(trace.title if not isinstance(trace.title, str) else trace.title.encode('utf-8'))
 
 			# Write the data file
-			if trace.data is not None and len(trace.data) > 0:
+			if trace.parameters is not None and len(trace.parameters) > 0:
 				with open(self.__get_trace_path(self.shadow_trace_index, 'data'), 'wb') as tmp_file:
-					tmp_file.write(trace.data)
+					tmp_file.write(trace.parameters.serialize())
 
 			# Write the sample file
 			with open(self.__get_trace_path(self.shadow_trace_index, 'samples'), 'wb') as tmp_file:
