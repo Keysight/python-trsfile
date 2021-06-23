@@ -57,8 +57,8 @@ class TestCreation(unittest.TestCase):
 					)
 					for i in range(0, trace_count)]
 				)
-		except Exception:
-			self.assertTrue(False)
+		except Exception as e:
+			self.fail('Exception occurred: ' + str(e))
 
 	def test_write_closed(self):
 		trace_count = 100
