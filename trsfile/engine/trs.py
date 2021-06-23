@@ -40,7 +40,7 @@ class TrsEngine(Engine):
 		self.handle = None
 		self.file_handle = None
 
-		self.data_offset = None
+		self.traceblock_offset = None
 		self.sample_length = None
 		self.trace_length = None
 
@@ -221,7 +221,7 @@ class TrsEngine(Engine):
 				raise ValueError('Trace has a different length from the expected length and padding mode is NONE')
 
 			# Seek to the beginning of the trace (this automatically enables us to overwrite)
-			self.file_handle.seek(self.data_offset + i * self.trace_length)
+			self.file_handle.seek(self.traceblock_offset + i * self.trace_length)
 
 			# Title and title padding
 			title = trace.title.strip().encode('utf-8')
@@ -284,7 +284,7 @@ class TrsEngine(Engine):
 		# We need to resize the mmap if we added something directly on the file handle
 		# We do it here for optimization purposes, if you do not read, no resizing :)
 		if not self.is_mmap_synched and not self.read_only:
-			total_file_size = self.data_offset + (self.length() + 1) * self.trace_length
+			total_file_size = self.traceblock_offset + (self.length() + 1) * self.trace_length
 			if self.handle.size() < total_file_size:
 				self.handle.resize(total_file_size)
 			self.is_mmap_synched = True
@@ -293,7 +293,7 @@ class TrsEngine(Engine):
 		traces = []
 		for i in indexes:
 			# Seek to the beginning of the trace
-			self.handle.seek(self.data_offset + i * self.trace_length)
+			self.handle.seek(self.traceblock_offset + i * self.trace_length)
 
 			# Read the title
 			if Header.TITLE_SPACE in self.headers:
@@ -450,11 +450,11 @@ class TrsEngine(Engine):
 			self.handle.write(bytes([Header.TRACE_BLOCK.value, 0]))
 
 			# Calculate offset
-			self.data_offset = self.handle.tell()
+			self.traceblock_offset = self.handle.tell()
 			self.header_locations[Header.TRACE_BLOCK] = None
-		elif self.data_offset is None:
+		elif self.traceblock_offset is None:
 			# This should never happen, but who knows?!
-			raise NotImplementedError('Data offset is still None but TRACE_BLOCK TLV already in headers?!?!?!')
+			raise NotImplementedError('Trace block offset is still None but TRACE_BLOCK TLV already in headers?!?!?!')
 
 	def __read_headers(self):
 		"""Read all internal headers from the file"""
@@ -514,12 +514,12 @@ class TrsEngine(Engine):
 			raise IOError('TRS file does not contain all mandatory headers')
 
 		# Pre-compute some static information based on headers
-		self.data_offset = self.handle.tell()
+		self.traceblock_offset = self.handle.tell()
 		self.sample_length = self.headers[Header.NUMBER_SAMPLES] * self.headers[Header.SAMPLE_CODING].size
 		self.trace_length = self.sample_length + self.headers.get(Header.LENGTH_DATA, 0) + self.headers.get(Header.TITLE_SPACE, 0)
 
 		# Sanity: Check if the file has the proper size
 		self.handle.seek(0, os.SEEK_END)
 		file_size = self.handle.tell()
-		if file_size != self.data_offset + self.headers[Header.NUMBER_TRACES] * self.trace_length:
+		if file_size != self.traceblock_offset + self.headers[Header.NUMBER_TRACES] * self.trace_length:
 			raise IOError('TRS file has an unexpected length')
