@@ -5,6 +5,8 @@ from io import BytesIO
 
 from trsfile.utils import encode_as_short, read_short
 
+UTF_8 = 'utf-8'
+
 
 class TraceParameter(ABC):
     @staticmethod
@@ -134,12 +136,12 @@ class StringParameter(TraceParameter):
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         bytes_read = io_bytes.read(ParameterType.STRING.byte_size * param_length)
-        param_value = bytes_read.decode()
+        param_value = bytes_read.decode(UTF_8)
         return StringParameter(param_value)
 
     def serialize(self):
         out = bytearray()
-        encoded_string = self.value.encode()
+        encoded_string = self.value.encode(UTF_8)
         out.extend(encoded_string)
         return bytes(out)
 
