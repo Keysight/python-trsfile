@@ -363,6 +363,12 @@ class TrsEngine(Engine):
 			if not header in self.headers:
 				self.headers[header] = header.default
 
+		# Make sure correct trs version is set
+		if (Header.TRACE_PARAMETER_DEFINITIONS in self.headers or
+			Header.TRACE_SET_PARAMETERS in self.headers) and \
+			(Header.TRS_VERSION not in self.headers or self.headers[Header.TRS_VERSION] < 2):
+			self.headers[Header.TRS_VERSION] = 2
+
 		# Finally add some extra headers that are freaking useful if they are not provided
 		# This is up for debate if somethings are missing
 		if Header.TITLE_SPACE not in self.headers:
