@@ -4,7 +4,7 @@ Riscure Inspector trace files.
 """
 
 name        = "trsfile"
-__version__ = '0.4a'
+__version__ = '2.0'
 __author__  = 'Riscure'
 __contact__ = 'support@riscure.com'
 __all__     = [
