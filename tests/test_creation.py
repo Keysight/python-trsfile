@@ -5,10 +5,15 @@ import tempfile
 import unittest
 import math
 import shutil
+
 from trsfile import Trace, SampleCoding, Header, TracePadding
+from trsfile.parametermap import TraceParameterMap
+from trsfile.traceparameter import ByteArrayParameter
+
 
 def get_sample(x):
 	return math.sin(0.5 * x) * 1000
+
 
 class TestCreation(unittest.TestCase):
 
@@ -48,12 +53,12 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * sample_count,
-						data = i.to_bytes(8, byteorder='big')
+						TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
 					)
 					for i in range(0, trace_count)]
 				)
-		except Exception:
-			self.assertTrue(False)
+		except Exception as e:
+			self.fail('Exception occurred: ' + str(e))
 
 	def test_write_closed(self):
 		trace_count = 100
@@ -64,7 +69,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = i.to_bytes(8, byteorder='big')
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
 				)
 				for i in range(0, trace_count)]
 			)
@@ -81,7 +86,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[get_sample(i) for i in range(0, sample_count)],
-					data = i.to_bytes(8, byteorder='big')
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(b'')})
 				)
 				for i in range(0, trace_count)
 			]
@@ -126,7 +131,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = i.to_bytes(8, byteorder='big')
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
 				)
 				for i in range(0, trace_count)]
 			)
@@ -147,7 +152,7 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * sample_count,
-						data = i.to_bytes(8, byteorder='big')
+						TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
 					)
 					for i in range(0, trace_count)]
 				)
@@ -168,7 +173,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = i.to_bytes(8, byteorder='big')
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
 				)
 				for i in range(0, trace_count)]
 			)
@@ -195,7 +200,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 8
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(bytes(8))})
 				)
 				]
 			)
@@ -206,7 +211,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = i.to_bytes(8, byteorder='big')
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
 				)
 				for i in range(0, trace_count)]
 			)
@@ -230,7 +235,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 8
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(bytes(8))})
 				)
 			)
 
@@ -240,7 +245,7 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * (sample_count - 1),
-						data = b'\x10' * 8
+						TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(b'\x10' * 8)})
 					)
 				)
 			self.assertEqual(len(trs_traces), 1)
@@ -251,7 +256,7 @@ class TestCreation(unittest.TestCase):
 					Trace(
 						SampleCoding.FLOAT,
 						[0] * (sample_count + 1),
-						data = b'\x01' * 8
+						TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(b'\x01' * 8)})
 					)
 				)
 			self.assertEqual(len(trs_traces), 1)
@@ -261,7 +266,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[0] * sample_count,
-					data = b'\x00' * 8
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(bytes(8))})
 				)
 			)
 			self.assertEqual(len(trs_traces), 2)
@@ -277,7 +282,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					fmt,
 					b'\xDE' * (sample_count * fmt.size),
-					data = b'\x00' * 8
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(bytes(8))})
 				)
 			)
 
@@ -286,7 +291,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					fmt,
 					b'\xDE' * (sample_count + i) * fmt.size,
-					data = abs(i).to_bytes(8, byteorder='big')
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(abs(i).to_bytes(8, byteorder='big'))})
 				)
 				for i in range(0, -trace_count, -1)]
 			)
@@ -296,7 +301,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					fmt,
 					b'\xDE' * (sample_count + i) * fmt.size,
-					data = i.to_bytes(8, byteorder='big')
+					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
 				)
 				for i in range(0, trace_count)]
 			)
@@ -319,6 +324,7 @@ class TestCreation(unittest.TestCase):
 
 				# Test that this is indeed not zero
 				self.assertNotEqual(trs_trace[-i - 1], 0)
+
 
 if __name__ == '__main__':
 	unittest.main()

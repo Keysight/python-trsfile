@@ -6,9 +6,10 @@ import copy
 
 from io import BytesIO
 from trsfile.trace import Trace
+from trsfile.traceparameter import ByteArrayParameter
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
-from trsfile.parametermap import TraceSetParameterMap
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
 
 ASCII_LESS_THAN = 0x3C
 
@@ -40,7 +41,7 @@ class TrsEngine(Engine):
 		self.handle = None
 		self.file_handle = None
 
-		self.data_offset = None
+		self.traceblock_offset = None
 		self.sample_length = None
 		self.trace_length = None
 
@@ -181,9 +182,9 @@ class TrsEngine(Engine):
 				update_headers[Header.NUMBER_SAMPLES] = max(lengths)
 
 			if self.headers[Header.LENGTH_DATA] is None:
-				if len(set([len(trace.data) for trace in traces])) > 1:
+				if len(set([len(trace.parameters.serialize()) for trace in traces])) > 1:
 					raise TypeError('Traces have different data length, this is not supported in TRS files')
-				update_headers[Header.LENGTH_DATA] = len(traces[0].data)
+				update_headers[Header.LENGTH_DATA] = len(traces[0].parameters.serialize())
 
 			if self.headers[Header.SAMPLE_CODING] is None:
 				if len(set([trace.sample_coding for trace in traces])) > 1:
@@ -221,7 +222,7 @@ class TrsEngine(Engine):
 				raise ValueError('Trace has a different length from the expected length and padding mode is NONE')
 
 			# Seek to the beginning of the trace (this automatically enables us to overwrite)
-			self.file_handle.seek(self.data_offset + i * self.trace_length)
+			self.file_handle.seek(self.traceblock_offset + i * self.trace_length)
 
 			# Title and title padding
 			title = trace.title.strip().encode('utf-8')
@@ -231,12 +232,8 @@ class TrsEngine(Engine):
 			if len(title) < self.headers[Header.TITLE_SPACE]:
 				self.file_handle.write(bytes(self.headers[Header.TITLE_SPACE] - len(title)))
 
-			# Data and data padding
-			if self.padding_mode == TracePadding.NONE and len(trace.data) > self.headers[Header.LENGTH_DATA]:
-				raise TypeError('Trace data is longer than available data space')
-			self.file_handle.write(trace.data[0:self.headers[Header.LENGTH_DATA]])
-			if len(trace.data) < self.headers[Header.LENGTH_DATA]:
-				self.file_handle.write(bytes(self.headers[Header.LENGTH_DATA] - len(trace.data)))
+			# Parameters
+			self.file_handle.write(trace.parameters.serialize())
 
 			# Automatic truncate
 			trace.samples[:self.headers[Header.NUMBER_SAMPLES]].tofile(self.file_handle)
@@ -284,7 +281,7 @@ class TrsEngine(Engine):
 		# We need to resize the mmap if we added something directly on the file handle
 		# We do it here for optimization purposes, if you do not read, no resizing :)
 		if not self.is_mmap_synched and not self.read_only:
-			total_file_size = self.data_offset + (self.length() + 1) * self.trace_length
+			total_file_size = self.traceblock_offset + (self.length() + 1) * self.trace_length
 			if self.handle.size() < total_file_size:
 				self.handle.resize(total_file_size)
 			self.is_mmap_synched = True
@@ -293,7 +290,7 @@ class TrsEngine(Engine):
 		traces = []
 		for i in indexes:
 			# Seek to the beginning of the trace
-			self.handle.seek(self.data_offset + i * self.trace_length)
+			self.handle.seek(self.traceblock_offset + i * self.trace_length)
 
 			# Read the title
 			if Header.TITLE_SPACE in self.headers:
@@ -301,18 +298,30 @@ class TrsEngine(Engine):
 			else:
 				title = ''     # No title
 
-			# Read data
-			if Header.LENGTH_DATA in self.headers:
-				data = self.handle.read(self.headers[Header.LENGTH_DATA])
-			else:
-				data = bytes() # No data
+			parameters = self.read_parameter_data()
 
 			# Read all the samples
 			samples = numpy.frombuffer(self.handle.read(self.trace_length), self.headers[Header.SAMPLE_CODING].format, self.headers[Header.NUMBER_SAMPLES])
 
-			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, data, title, self.headers))
+			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, parameters, title, self.headers))
 
 		return traces
+
+	def read_parameter_data(self):
+		# Read the trace parameters
+		if Header.TRS_VERSION in self.headers \
+				and self.headers[Header.TRS_VERSION] > 1 \
+				and Header.TRACE_PARAMETER_DEFINITIONS in self.headers:
+			definitions = self.headers[Header.TRACE_PARAMETER_DEFINITIONS]
+			data = self.handle.read(definitions.get_total_size())
+			parameters = TraceParameterMap.deserialize(data, definitions)
+		else:
+			parameters = TraceParameterMap()
+			# Read (legacy) data
+			if Header.LENGTH_DATA in self.headers:
+				data = self.handle.read(self.headers[Header.LENGTH_DATA])
+				parameters['LEGACY_DATA'] = ByteArrayParameter(data)
+		return parameters
 
 	def close(self):
 		"""Closes the open file handle if it is opened"""
@@ -353,6 +362,12 @@ class TrsEngine(Engine):
 		for header in Header.get_mandatory():
 			if not header in self.headers:
 				self.headers[header] = header.default
+
+		# Make sure correct trs version is set
+		if (Header.TRACE_PARAMETER_DEFINITIONS in self.headers or
+			Header.TRACE_SET_PARAMETERS in self.headers) and \
+			(Header.TRS_VERSION not in self.headers or self.headers[Header.TRS_VERSION] < 2):
+			self.headers[Header.TRS_VERSION] = 2
 
 		# Finally add some extra headers that are freaking useful if they are not provided
 		# This is up for debate if somethings are missing
@@ -397,6 +412,8 @@ class TrsEngine(Engine):
 				tag_value = value
 			elif header.type is TraceSetParameterMap:
 				tag_value = value.serialize()
+			elif header.type is TraceParameterDefinitionMap:
+				tag_value = value.serialize()
 			else:
 				raise TypeError('Header has a type that can not be serialized')
 
@@ -435,11 +452,11 @@ class TrsEngine(Engine):
 			self.handle.write(bytes([Header.TRACE_BLOCK.value, 0]))
 
 			# Calculate offset
-			self.data_offset = self.handle.tell()
+			self.traceblock_offset = self.handle.tell()
 			self.header_locations[Header.TRACE_BLOCK] = None
-		elif self.data_offset is None:
+		elif self.traceblock_offset is None:
 			# This should never happen, but who knows?!
-			raise NotImplementedError('Data offset is still None but TRACE_BLOCK TLV already in headers?!?!?!')
+			raise NotImplementedError('Trace block offset is still None but TRACE_BLOCK TLV already in headers?!?!?!')
 
 	def __read_headers(self):
 		"""Read all internal headers from the file"""
@@ -480,6 +497,8 @@ class TrsEngine(Engine):
 					tag_value = SampleCoding(tag_value[0])
 				elif header.type is TraceSetParameterMap:
 					tag_value = TraceSetParameterMap.deserialize(BytesIO(tag_value))
+				elif header.type is TraceParameterDefinitionMap:
+					tag_value = TraceParameterDefinitionMap.deserialize(BytesIO(tag_value))
 			else:
 				if not self.ignore_unknown_tags:
 					error_msg = 'Warning: tag 0x{tag:02X} is not supported by the library, if you believe ' \
@@ -497,12 +516,12 @@ class TrsEngine(Engine):
 			raise IOError('TRS file does not contain all mandatory headers')
 
 		# Pre-compute some static information based on headers
-		self.data_offset = self.handle.tell()
+		self.traceblock_offset = self.handle.tell()
 		self.sample_length = self.headers[Header.NUMBER_SAMPLES] * self.headers[Header.SAMPLE_CODING].size
 		self.trace_length = self.sample_length + self.headers.get(Header.LENGTH_DATA, 0) + self.headers.get(Header.TITLE_SPACE, 0)
 
 		# Sanity: Check if the file has the proper size
 		self.handle.seek(0, os.SEEK_END)
 		file_size = self.handle.tell()
-		if file_size != self.data_offset + self.headers[Header.NUMBER_TRACES] * self.trace_length:
+		if file_size != self.traceblock_offset + self.headers[Header.NUMBER_TRACES] * self.trace_length:
 			raise IOError('TRS file has an unexpected length')
