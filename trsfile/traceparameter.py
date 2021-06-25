@@ -35,9 +35,6 @@ class TraceSetParameter:
         param_length = read_short(io_bytes)
         return param_type.param_class.deserialize(io_bytes, param_length)
 
-    def serialize(self) -> bytes:
-        pass
-
 
 class BooleanArrayParameter(TraceParameter):
     @staticmethod
