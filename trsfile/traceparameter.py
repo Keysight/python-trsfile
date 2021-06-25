@@ -19,6 +19,8 @@ class TraceParameter(ABC):
         pass
 
     def __init__(self, value):
+        if type(value) is not str and (value is None or len(value) <= 0):
+            raise ValueError('The value for a TraceParameter cannot be empty')
         self.value = value
 
     def __eq__(self, other):

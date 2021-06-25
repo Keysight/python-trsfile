@@ -205,7 +205,8 @@ class FileEngine(Engine):
 				data = b''
 
 			parameters = TraceParameterMap()
-			parameters['LEGACY_DATA'] = ByteArrayParameter(data)
+			if data:
+				parameters['LEGACY_DATA'] = ByteArrayParameter(data)
 			# Create trace and make sure headers point to our dict
 			traces.append(Trace(sample_coding, samples, parameters, title, self.headers))
 
