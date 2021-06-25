@@ -4,9 +4,9 @@ Riscure Inspector trace files.
 """
 
 name        = "trsfile"
-__version__ = '0.3.2'
-__author__  = 'Kevin Valk'
-__contact__ =  'valk@riscure.com'
+__version__ = '2.0'
+__author__  = 'Riscure'
+__contact__ = 'support@riscure.com'
 __all__     = [
 'trs_open', 'Trace', 'TraceSet', 'SampleCoding', 'Header', 'TracePadding', \
 'Engine', 'TrsEngine', 'FileEngine',
