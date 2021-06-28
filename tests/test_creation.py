@@ -86,7 +86,7 @@ class TestCreation(unittest.TestCase):
 				Trace(
 					SampleCoding.FLOAT,
 					[get_sample(i) for i in range(0, sample_count)],
-					TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(b'')})
+					TraceParameterMap()
 				)
 				for i in range(0, trace_count)
 			]

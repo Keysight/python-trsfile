@@ -320,7 +320,8 @@ class TrsEngine(Engine):
 			# Read (legacy) data
 			if Header.LENGTH_DATA in self.headers:
 				data = self.handle.read(self.headers[Header.LENGTH_DATA])
-				parameters['LEGACY_DATA'] = ByteArrayParameter(data)
+				if data:
+					parameters['LEGACY_DATA'] = ByteArrayParameter(data)
 		return parameters
 
 	def close(self):
