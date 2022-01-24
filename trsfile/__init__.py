@@ -2,30 +2,6 @@
 The de facto trace set (.trs files) library for reading
 Riscure Inspector trace files.
 """
-import re
-from subprocess import Popen, PIPE
-
-
-def get_version():
-    try:
-        process = Popen(['git', 'describe'], stdout=PIPE, stderr=PIPE)
-        process.stderr.close()
-        line = str(process.stdout.readlines()[0].strip())
-        match = re.compile("[^0-9.]*([0-9.]+)[^0-9.]*").match(line)
-        return match.group(1)
-    except:
-        return None
-
-
-name        = "trsfile"
-__version__ = get_version()
-__author__  = 'Riscure'
-__contact__ = 'support@riscure.com'
-__all__     = [
-'trs_open', 'Trace', 'TraceSet', 'SampleCoding', 'Header', 'TracePadding', \
-'Engine', 'TrsEngine', 'FileEngine',
-]
-
 from trsfile.trace import Trace
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.trace_set import TraceSet
