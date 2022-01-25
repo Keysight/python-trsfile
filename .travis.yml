@@ -7,8 +7,7 @@ python:
 install:
   - pip install .
 
-script:
-  - cd tests && python -m unittest
+script: python -m unittest tests
 
 jobs:
   fast_finish: true
