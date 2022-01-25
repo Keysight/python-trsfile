@@ -14,7 +14,7 @@ from trsfile.trace_set import TraceSet
 try:
     from importlib.metadata import version
     __version__ = version(__name__)
-except ModuleNotFoundError:
+except ImportError:
     # importlib.metadata was only added in Python 3.8. For older pythons use the VERSION.txt file.
     import pkgutil
     pkgutil.get_data(__name__, "VERSION.txt")
