@@ -1,5 +1,9 @@
-build:
-  image: latest
+version: 2
+
 python:
-  version: 3.6
-requirements_file: requirements-dev.txt
+  version: "3.8"
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - DEV
