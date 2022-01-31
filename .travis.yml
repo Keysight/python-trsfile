@@ -7,7 +7,7 @@ python:
 install:
   - pip install .
 
-script: python -m unittest tests
+script: env
 
 jobs:
   fast_finish: true
