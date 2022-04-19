@@ -30,6 +30,7 @@ class TracePadding(Enum):
 	TRUNCATE = 2
 	AUTO = 3
 
+
 class SampleCoding(Enum):
 	"""Defines the encoding of all the samples in the trace.
 	Bit 4 specifies if it is a float (1) or an integer (0),
@@ -54,6 +55,7 @@ class SampleCoding(Enum):
 	@property
 	def is_float(self):
 		return (self._value_ & 0x10) != 0
+
 
 class Header(Enum):
 	"""All headers that are currently supported in the .trs file format as

@@ -454,7 +454,7 @@ class TrsEngine(Engine):
 
 			# Calculate offset
 			self.traceblock_offset = self.handle.tell()
-			self.header_locations[Header.TRACE_BLOCK] = None
+			self.header_locations[Header.TRACE_BLOCK] = (self.handle.tell(), 0)
 		elif self.traceblock_offset is None:
 			# This should never happen, but who knows?!
 			raise NotImplementedError('Trace block offset is still None but TRACE_BLOCK TLV already in headers?!?!?!')
