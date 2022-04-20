@@ -38,7 +38,7 @@ class TrsEngine(Engine):
 
 	_TRACE_BLOCK_START = bytes([Header.TRACE_BLOCK.value, 0])
 
-	def __init__(self, path, mode = 'x', **options):
+	def __init__(self, path, mode='x', **options):
 		self.path = path if type(path) is str else str(path)
 		self.handle = None
 		self.file_handle = None
@@ -74,7 +74,7 @@ class TrsEngine(Engine):
 				raise FileNotFoundError('No TRS file: \'{0:s}\''.format(self.path))
 
 			self.file_handle = open(self.path, 'rb')
-			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_READ)
+			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_READ)
 			self.read_only = True
 			self.read_headers = True
 
@@ -90,7 +90,7 @@ class TrsEngine(Engine):
 
 			# Now we can open it properly
 			self.file_handle = open(self.path, 'r+b')
-			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
+			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
 
 			self.read_only = False
 			self.read_headers = False
@@ -109,7 +109,7 @@ class TrsEngine(Engine):
 			self.file_handle.close()
 
 			self.file_handle = open(self.path, 'r+b')
-			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
+			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
 			self.read_only = False
 			self.read_headers = False
 
@@ -130,12 +130,13 @@ class TrsEngine(Engine):
 
 			if self.read_headers and headers is not None:
 				raise TypeError('Cannot change headers when reading TRS files.')
-			elif not self.read_headers and headers is not None and any(not isinstance(header, Header) for header in headers):
+			elif not self.read_headers and headers is not None and any(
+					not isinstance(header, Header) for header in headers):
 				raise TypeError('Creation of TRS files requires passing instances of Headers to the constructor.')
 
 			# NOTE: We are using r+b mode because we are essentially updating the file!
 			self.file_handle = open(self.path, 'r+b')
-			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access = mmap.ACCESS_WRITE)
+			self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
 			self.read_only = False
 
 		else:
@@ -209,7 +210,9 @@ class TrsEngine(Engine):
 
 		# Make sure we have enough traces for every index
 		if len(indexes) != len(traces):
-			raise TypeError('The number of provided traces ({0:d}) have to be equal to the number of indexes ({1:d})'.format(len(traces), len(indexes)))
+			raise TypeError(
+				'The number of provided traces ({0:d}) have to be equal to the number of indexes ({1:d})'.format(
+					len(traces), len(indexes)))
 
 		# Early return
 		if len(indexes) <= 0:
@@ -220,9 +223,11 @@ class TrsEngine(Engine):
 		elif self.padding_mode == TracePadding.NONE:
 			# We need to verify if all required headers are set, else throw an error
 			required_headers = [Header.NUMBER_SAMPLES, Header.LENGTH_DATA, Header.SAMPLE_CODING, Header.TITLE_SPACE]
-			missing_headers = [header for header in required_headers if header not in self.headers or self.headers[header] is None]
+			missing_headers = [header for header in required_headers if
+							   header not in self.headers or self.headers[header] is None]
 			if len(missing_headers) > 0:
-				raise ValueError('The following headers are not set: ' + ', '.join([h.name for h in missing_headers]) + ', set these headers or use PaddingMode.AUTO')
+				raise ValueError('The following headers are not set: ' + ', '.join(
+					[h.name for h in missing_headers]) + ', set these headers or use PaddingMode.AUTO')
 		else:
 			raise NotImplementedError('This padding mode is not supported')
 
@@ -230,7 +235,8 @@ class TrsEngine(Engine):
 		if self.sample_length is None:
 			self.sample_length = self.headers[Header.NUMBER_SAMPLES] * self.headers[Header.SAMPLE_CODING].size
 		if self.trace_length is None:
-			self.trace_length = self.sample_length + self.headers.get(Header.LENGTH_DATA, 0) + self.headers.get(Header.TITLE_SPACE, 0)
+			self.trace_length = self.sample_length + self.headers.get(Header.LENGTH_DATA, 0) + self.headers.get(
+				Header.TITLE_SPACE, 0)
 
 		# Store all traces with the next sequence numbers and keep these numbers as a list
 		for i, trace in zip(indexes, traces):
@@ -259,7 +265,8 @@ class TrsEngine(Engine):
 			trace.samples[:self.headers[Header.NUMBER_SAMPLES]].tofile(self.file_handle)
 
 			# Add any required padding
-			length = (self.headers[Header.NUMBER_SAMPLES] - len(trace.samples)) * self.headers[Header.SAMPLE_CODING].size
+			length = (self.headers[Header.NUMBER_SAMPLES] - len(trace.samples)) * self.headers[
+				Header.SAMPLE_CODING].size
 			if length > 0:
 				self.file_handle.write(length * b'\x00')
 
@@ -316,12 +323,13 @@ class TrsEngine(Engine):
 			if Header.TITLE_SPACE in self.headers:
 				title = self.handle.read(self.headers[Header.TITLE_SPACE]).rstrip(b'\x00').decode('utf-8')
 			else:
-				title = ''     # No title
+				title = ''  # No title
 
 			parameters = self.read_parameter_data()
 
 			# Read all the samples
-			samples = numpy.frombuffer(self.handle.read(self.trace_length), self.headers[Header.SAMPLE_CODING].format, self.headers[Header.NUMBER_SAMPLES])
+			samples = numpy.frombuffer(self.handle.read(self.trace_length), self.headers[Header.SAMPLE_CODING].format,
+									   self.headers[Header.NUMBER_SAMPLES])
 
 			traces.append(Trace(self.headers[Header.SAMPLE_CODING], samples, parameters, title, self.headers))
 
@@ -372,7 +380,7 @@ class TrsEngine(Engine):
 		if len(changed_headers) > 0:
 			self.__write_headers(changed_headers)
 
-	def __initialize_headers(self, headers = None):
+	def __initialize_headers(self, headers=None):
 		"""Initialize the headers, this is done either by reading the headers from file or using headers given on creation"""
 		if self.read_headers:
 			self.__read_headers()
@@ -395,11 +403,11 @@ class TrsEngine(Engine):
 		# Make sure correct trs version is set
 		if (Header.TRACE_PARAMETER_DEFINITIONS in self.headers or
 			Header.TRACE_SET_PARAMETERS in self.headers) and \
-			(Header.TRS_VERSION not in self.headers or self.headers[Header.TRS_VERSION] < 2):
+				(Header.TRS_VERSION not in self.headers or self.headers[Header.TRS_VERSION] < 2):
 			self.headers[Header.TRS_VERSION] = 2
 
 		# Finally add some extra headers that are freaking useful if they are not provided
-		# This is up for debate if somethings are missing
+		# This is up for debate if some things are missing
 		if Header.TITLE_SPACE not in self.headers:
 			self.headers[Header.TITLE_SPACE] = Header.TITLE_SPACE.default
 		if Header.LENGTH_DATA not in self.headers:
@@ -408,7 +416,7 @@ class TrsEngine(Engine):
 		# Write the initial headers
 		self.__write_headers()
 
-	def __write_headers(self, headers = None):
+	def __write_headers(self, headers=None):
 		# Write the headers to the file. WARNING: Do not call if the new headers have a different size than the
 		# existing ones and trace data has already been written to the file.
 		if headers is None:
@@ -557,7 +565,8 @@ class TrsEngine(Engine):
 		# Pre-compute some static information based on headers
 		self.traceblock_offset = self.handle.tell()
 		self.sample_length = self.headers[Header.NUMBER_SAMPLES] * self.headers[Header.SAMPLE_CODING].size
-		self.trace_length = self.sample_length + self.headers.get(Header.LENGTH_DATA, 0) + self.headers.get(Header.TITLE_SPACE, 0)
+		self.trace_length = self.sample_length + self.headers.get(Header.LENGTH_DATA, 0) + self.headers.get(
+			Header.TITLE_SPACE, 0)
 
 		# Sanity: Check if the file has the proper size
 		self.handle.seek(0, os.SEEK_END)
