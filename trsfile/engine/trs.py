@@ -147,6 +147,9 @@ class TrsEngine(Engine):
 	def is_closed(self):
 		return self.handle is None or self.handle.closed
 
+	def has_trace_data(self):
+		return self.handle.size() > self.traceblock_offset
+
 	def set_traces(self, index, traces):
 		# Make sure we have proper indexing
 		if isinstance(index, slice):
@@ -340,6 +343,14 @@ class TrsEngine(Engine):
 			self.file_handle.close()
 
 	def update_headers(self, headers):
+		new_key = False
+		for header_key, header_value in headers.items():
+			if header_key not in self.headers:
+				new_key = True
+				break
+		if self.has_trace_data() and new_key:
+			raise IOError("Cannot add another header item if the traceset already contains trace data")
+
 		changed_headers = super().update_headers(headers)
 		if len(changed_headers) > 0:
 			self.__write_headers(changed_headers)
@@ -381,6 +392,8 @@ class TrsEngine(Engine):
 		self.__write_headers()
 
 	def __write_headers(self, headers = None):
+		# Write the headers to the file. WARNING: Do not call if the new headers have a different size than the
+		# existing ones and trace data has already been written to the file.
 		if headers is None:
 			headers = self.headers
 
@@ -438,6 +451,12 @@ class TrsEngine(Engine):
 				else:
 					tag += [tag_length]
 				tag += tag_value
+
+				# If the TRACE_BLOCK was already saved, overwrite it with the TRACE_BLOCK
+				if Header.TRACE_BLOCK in self.header_locations:
+					self.handle.seek(self.traceblock_offset - 2)
+					self.header_locations.pop(Header.TRACE_BLOCK)
+					self.traceblock_offset = None
 
 				# Store this index for future references
 				if self.handle.size() < self.handle.tell() + len(tag):
