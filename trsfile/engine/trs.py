@@ -58,7 +58,7 @@ class TrsEngine(Engine):
 		headers = options.get('headers', None)
 		self.live_update = int(options.get('live_update', False))
 		self.live_update_count = 0
-		self.padding_mode = options.get('padding_mode', TracePadding.NONE)
+		self.padding_mode = options.get('padding_mode', TracePadding.AUTO)
 		if not isinstance(self.padding_mode, TracePadding):
 			raise TypeError('TrsFile requires padding_mode to be of type \'TracePadding\'')
 		if self.padding_mode not in [TracePadding.NONE, TracePadding.AUTO]:
@@ -152,6 +152,49 @@ class TrsEngine(Engine):
 	def has_trace_data(self):
 		return self.handle.size() > self.traceblock_offset
 
+	def update_headers_with_traces_metadata(self, traces):
+		# Check if any of the following headers are NOT initialized:
+		# - NUMBER_SAMPLES
+		# - LENGTH_DATA
+		# - TITLE_SPACE
+		# For any of these uninitialized headers, check if all traces are the same
+		# for these fields, and set them to that value.
+		headers_updates = {}
+		if self.headers[Header.NUMBER_SAMPLES] is None:
+			lengths = set([len(trace) for trace in traces])
+
+			# Check padding mode on how we are going to do this
+			headers_updates[Header.NUMBER_SAMPLES] = max(lengths)
+
+		if self.headers[Header.LENGTH_DATA] is None:
+			if len(set([len(trace.parameters.serialize()) for trace in traces])) > 1:
+				raise TypeError('Traces have different data length, this is not supported in TRS files')
+
+			data_length = len(traces[0].parameters.serialize())
+
+			# Add a TraceParameterDefinitionMap if none is present, and verify its validity if one is present
+			if Header.TRACE_PARAMETER_DEFINITIONS not in self.headers \
+					or self.headers[Header.TRACE_PARAMETER_DEFINITIONS] is None \
+					or self.headers[Header.TRACE_PARAMETER_DEFINITIONS].get_total_size() == 0:
+				if data_length > 0:
+					headers_updates[Header.TRACE_PARAMETER_DEFINITIONS] = \
+						TraceParameterDefinitionMap.from_trace_parameter_map(traces[0].parameters)
+			elif not traces[0].parameters.matches(self.headers[Header.TRACE_PARAMETER_DEFINITIONS]):
+				raise TypeError("The traces' parameters do not match the trace set's definitions")
+
+			headers_updates[Header.LENGTH_DATA] = data_length
+
+		if self.headers[Header.SAMPLE_CODING] is None:
+			if len(set([trace.sample_coding for trace in traces])) > 1:
+				raise TypeError('Traces have different sample coding, this is not supported in TRS files')
+			headers_updates[Header.SAMPLE_CODING] = traces[0].sample_coding
+
+		if self.headers[Header.TITLE_SPACE] is None:
+			headers_updates[Header.TITLE_SPACE] = max([len(trace.title) for trace in traces])
+
+		# Now update headers
+		self.update_headers(headers_updates)
+
 	def set_traces(self, index, traces):
 		# Make sure we have proper indexing
 		if isinstance(index, slice):
@@ -172,42 +215,14 @@ class TrsEngine(Engine):
 		if len(indexes) <= 0:
 			return
 
-		# Check if any of the following headers are NOT initialized:
-		# - NUMBER_SAMPLES
-		# - LENGTH_DATA
-		# - TITLE_SPACE
-		# For any of these uninitialized headers, check if all traces are the same
-		# for these fields, and set them to that value.
 		if self.padding_mode == TracePadding.AUTO:
-			update_headers = {}
-			if self.headers[Header.NUMBER_SAMPLES] is None:
-				lengths = set([len(trace) for trace in traces])
-
-				# Check padding mode on how we are going to do this
-				update_headers[Header.NUMBER_SAMPLES] = max(lengths)
-
-			if self.headers[Header.LENGTH_DATA] is None:
-				if len(set([len(trace.parameters.serialize()) for trace in traces])) > 1:
-					raise TypeError('Traces have different data length, this is not supported in TRS files')
-				update_headers[Header.LENGTH_DATA] = len(traces[0].parameters.serialize())
-
-			if self.headers[Header.SAMPLE_CODING] is None:
-				if len(set([trace.sample_coding for trace in traces])) > 1:
-					raise TypeError('Traces have different sample coding, this is not supported in TRS files')
-				update_headers[Header.SAMPLE_CODING] = traces[0].sample_coding
-
-			if self.headers[Header.TITLE_SPACE] is None:
-				update_headers[Header.TITLE_SPACE] = max([len(trace.title) for trace in traces])
-
-			# Now update headers
-			self.update_headers(update_headers)
+			self.update_headers_with_traces_metadata(traces)
 		elif self.padding_mode == TracePadding.NONE:
 			# We need to verify if all required headers are set, else throw an error
 			required_headers = [Header.NUMBER_SAMPLES, Header.LENGTH_DATA, Header.SAMPLE_CODING, Header.TITLE_SPACE]
 			missing_headers = [header for header in required_headers if header not in self.headers or self.headers[header] is None]
 			if len(missing_headers) > 0:
 				raise ValueError('The following headers are not set: ' + ', '.join([h.name for h in missing_headers]) + ', set these headers or use PaddingMode.AUTO')
-
 		else:
 			raise NotImplementedError('This padding mode is not supported')
 

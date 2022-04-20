@@ -23,6 +23,9 @@ class TraceParameter(ABC):
             raise ValueError('The value for a TraceParameter cannot be empty')
         self.value = value
 
+    def __len__(self):
+        return len(self.value)
+
     def __eq__(self, other):
         return self.value == other.value
 
@@ -39,6 +42,9 @@ class TraceSetParameter:
 
 
 class BooleanArrayParameter(TraceParameter):
+    def __len__(self):
+        return len(bytes(self.value))
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         raw_values = io_bytes.read(ParameterType.BOOL.byte_size * param_length)
@@ -52,6 +58,9 @@ class BooleanArrayParameter(TraceParameter):
 
 
 class ByteArrayParameter(TraceParameter):
+    def __len__(self):
+        return len(bytes(self.value))
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         param_value = list(io_bytes.read(ParameterType.BYTE.byte_size * param_length))
@@ -132,6 +141,9 @@ class ShortArrayParameter(TraceParameter):
 
 
 class StringParameter(TraceParameter):
+    def __len__(self):
+        return len(self.value.encode(UTF_8))
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         bytes_read = io_bytes.read(ParameterType.STRING.byte_size * param_length)

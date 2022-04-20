@@ -7,8 +7,8 @@ import math
 import shutil
 
 from trsfile import Trace, SampleCoding, Header, TracePadding
-from trsfile.parametermap import TraceParameterMap
-from trsfile.traceparameter import ByteArrayParameter
+from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap
+from trsfile.traceparameter import ByteArrayParameter, TraceParameterDefinition, ParameterType
 
 
 def get_sample(x):
@@ -57,6 +57,26 @@ class TestCreation(unittest.TestCase):
 					)
 					for i in range(0, trace_count)]
 				)
+		except Exception as e:
+			self.fail('Exception occurred: ' + str(e))
+
+	def test_defaults(self):
+		trace_count = 100
+		sample_count = 1000
+
+		try:
+			with trsfile.open(self.tmp_path, 'w') as trs_traces:
+				trs_traces.extend([
+					Trace(
+						SampleCoding.FLOAT,
+						[0] * sample_count,
+						TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
+					)
+					for i in range(0, trace_count)]
+				)
+				expected_definitions = TraceParameterDefinitionMap(
+					{'LEGACY_DATA': TraceParameterDefinition(ParameterType.BYTE, 8, 0)})
+				self.assertDictEqual(trs_traces.get_headers()[Header.TRACE_PARAMETER_DEFINITIONS], expected_definitions)
 		except Exception as e:
 			self.fail('Exception occurred: ' + str(e))
 

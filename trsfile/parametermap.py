@@ -125,6 +125,18 @@ class TraceParameterDefinitionMap(LockableDict):
             out.extend(value.serialize())
         return out
 
+    @staticmethod
+    def from_trace_parameter_map(trace_parameters):
+        """Create a trace parameters definition map from a trace parameter map"""
+        offset = 0
+        result = TraceParameterDefinitionMap()
+        for key, trace_param in trace_parameters.items():
+            size = len(trace_param)
+            param_type = ParameterType.from_class(type(trace_param))
+            result[key] = TraceParameterDefinition(param_type, size, offset)
+            offset += size * param_type.byte_size
+        return result
+
 
 class TraceParameterMap(StringKeyOrderedDict):
     def __setitem__(self, key, value):
@@ -148,3 +160,15 @@ class TraceParameterMap(StringKeyOrderedDict):
         for val in self.values():
             out.extend(val.serialize())
         return out
+
+    def matches(self, definitions: TraceParameterDefinitionMap) -> bool:
+        """Test whether this TraceParameterMap matches the associated definitions"""
+        match = True
+        for key, definition in definitions.items():
+            if key not in self:
+                match = False
+            else:
+                match = len(self) == definition.length and ParameterType.from_class(type(self)) == definition.param_type
+            if not match:
+                break
+        return match

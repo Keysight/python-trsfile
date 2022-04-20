@@ -59,6 +59,14 @@ class TestTraceParameterDefinitionMap(TestCase):
         map['中文'] = TraceParameterDefinition(ParameterType.STRING, 15, 29)
         return map
 
+    @staticmethod
+    def create_traceparametermap() -> TraceParameterMap:
+        trace_params = TraceParameterMap()
+        trace_params['INPUT'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        trace_params['TITLE'] = StringParameter('Hello, world!')
+        trace_params['中文'] = StringParameter('你好，世界')
+        return trace_params
+
     def test_get_total_size(self):
         size = self.create_parameterdefinitionmap().get_total_size()
         self.assertEqual(size, 44)
@@ -70,6 +78,11 @@ class TestTraceParameterDefinitionMap(TestCase):
     def test_serialize(self):
         self.assertEqual(self.create_parameterdefinitionmap().serialize(),
                          self.SERIALIZED_DEFINITION)
+
+    def test_from_trace_params(self):
+        trace_params = TestTraceParameterDefinitionMap.create_traceparametermap()
+        map_from_trace_params = TraceParameterDefinitionMap.from_trace_parameter_map(trace_params)
+        self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_trace_params)
 
 
 class TestTraceParameterMap(TestCase):
