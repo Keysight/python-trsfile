@@ -426,8 +426,10 @@ class TrsEngine(Engine):
 				tag_value = value
 			elif header.type is TraceSetParameterMap:
 				tag_value = value.serialize()
+				value.lock_content()
 			elif header.type is TraceParameterDefinitionMap:
 				tag_value = value.serialize()
+				value.lock_content()
 			else:
 				raise TypeError('Header has a type that can not be serialized')
 
