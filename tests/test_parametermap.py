@@ -1,4 +1,3 @@
-from io import BytesIO
 from unittest import TestCase
 
 from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
@@ -35,14 +34,42 @@ class TestTraceSetParameterMap(TestCase):
         return result
 
     def test_deserialize(self):
-        map = TraceSetParameterMap.deserialize(BytesIO(self.SERIALIZED_MAP))
+        param_map = TraceSetParameterMap.deserialize(BytesIO(self.SERIALIZED_MAP))
         deserialized = self.create_tracesetparametermap()
-        self.assertDictEqual(map, deserialized)
+        self.assertDictEqual(param_map, deserialized)
 
     def test_serialize(self):
-        map = self.create_tracesetparametermap()
-        serialized = map.serialize()
+        param_map = self.create_tracesetparametermap()
+        serialized = param_map.serialize()
         self.assertEqual(serialized, self.SERIALIZED_MAP)
+
+    def test_add_parameter(self):
+        param_map = TraceSetParameterMap()
+        param_map.add_parameter('param1', [True, False, False, True, True])
+        param_map.add_parameter('param2', bytearray([0, 1, 127, 128, 254, 255]))
+        param_map.add_parameter('param3', [0, 1, -1, 255, 256, -32768, 32767])
+        param_map.add_parameter('param4', [-1, 1, 0x7fffffff, -0x80000000])
+        param_map.add_parameter('param5', [-1, 1, 0x7fffffffffffffff, -0x8000000000000000])
+        # python floats default to doubles, so add Float parameters the old-fashioned way:
+        param_map['param6'] = FloatArrayParameter([-0.5, 0.5, 1e6])
+        param_map.add_parameter('param7', [-0.5, 0.5, 1e6])
+        param_map.add_parameter('param8', 'The quick brown fox jumped over the lazy dog.')
+        param_map.add_parameter('中文', '你好，世界')
+        expected_map = self.create_tracesetparametermap()
+        self.assertDictEqual(param_map, expected_map)
+
+        # A single integer should be stored in an array:
+        param_map.add_parameter('param9', 1)
+        self.assertEqual(param_map['param9'], IntegerArrayParameter([1]))
+
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('param10', [False, 0, 'None'])
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('param10', None)
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('param10', ['The', 'quick', 'brown', 'fox', 'jumped', 'over', 'the', 'lazy', 'dog'])
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('param10', [])
 
 
 class TestTraceParameterDefinitionMap(TestCase):
@@ -53,19 +80,19 @@ class TestTraceParameterDefinitionMap(TestCase):
 
     @staticmethod
     def create_parameterdefinitionmap() -> TraceParameterDefinitionMap:
-        map = TraceParameterDefinitionMap()
-        map['INPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
-        map['TITLE'] = TraceParameterDefinition(ParameterType.STRING, 13, 16)
-        map['中文'] = TraceParameterDefinition(ParameterType.STRING, 15, 29)
-        return map
+        param_map = TraceParameterDefinitionMap()
+        param_map['INPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
+        param_map['TITLE'] = TraceParameterDefinition(ParameterType.STRING, 13, 16)
+        param_map['中文'] = TraceParameterDefinition(ParameterType.STRING, 15, 29)
+        return param_map
 
     @staticmethod
     def create_traceparametermap() -> TraceParameterMap:
-        trace_params = TraceParameterMap()
-        trace_params['INPUT'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
-        trace_params['TITLE'] = StringParameter('Hello, world!')
-        trace_params['中文'] = StringParameter('你好，世界')
-        return trace_params
+        param_map = TraceParameterMap()
+        param_map['INPUT'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map['TITLE'] = StringParameter('Hello, world!')
+        param_map['中文'] = StringParameter('你好，世界')
+        return param_map
 
     def test_get_total_size(self):
         size = self.create_parameterdefinitionmap().get_total_size()
@@ -80,8 +107,8 @@ class TestTraceParameterDefinitionMap(TestCase):
                          self.SERIALIZED_DEFINITION)
 
     def test_from_trace_params(self):
-        trace_params = TestTraceParameterDefinitionMap.create_traceparametermap()
-        map_from_trace_params = TraceParameterDefinitionMap.from_trace_parameter_map(trace_params)
+        param_map = TestTraceParameterDefinitionMap.create_traceparametermap()
+        map_from_trace_params = TraceParameterDefinitionMap.from_trace_parameter_map(param_map)
         self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_trace_params)
 
 
@@ -93,11 +120,11 @@ class TestTraceParameterMap(TestCase):
 
     @staticmethod
     def create_parametermap() -> TraceParameterMap:
-        map = TraceParameterMap()
-        map['INPUT'] = ByteArrayParameter(list(TestTraceParameterMap.CAFEBABE))
-        map['TITLE'] = StringParameter('Hello, world!')
-        map['中文'] = StringParameter('你好，世界')
-        return map
+        param_map = TraceParameterMap()
+        param_map['INPUT'] = ByteArrayParameter(list(TestTraceParameterMap.CAFEBABE))
+        param_map['TITLE'] = StringParameter('Hello, world!')
+        param_map['中文'] = StringParameter('你好，世界')
+        return param_map
 
     def test_deserialize(self):
         self.assertDictEqual(
@@ -107,3 +134,24 @@ class TestTraceParameterMap(TestCase):
 
     def test_serialize(self):
         self.assertEqual(self.SERIALIZED_MAP, self.create_parametermap().serialize())
+
+    def test_add_parameter(self):
+        param_map = TraceParameterMap()
+        param_map.add_parameter('INPUT', TestTraceParameterMap.CAFEBABE)
+        param_map.add_parameter('TITLE', 'Hello, world!')
+        param_map.add_parameter('中文', '你好，世界')
+        expected_map = self.create_parametermap()
+        self.assertDictEqual(param_map, expected_map)
+
+        # A single boolean should be stored in an array:
+        param_map.add_parameter('HAS_KEY', False)
+        self.assertEqual(param_map['HAS_KEY'], BooleanArrayParameter([False]))
+
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('OUTPUT', [False, 0, 'None'])
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('OUTPUT', None)
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('OUTPUT', [bytes.fromhex('cafebabedeadbeef'), bytes.fromhex('0102030405060708')])
+        with self.assertRaises(TypeError):
+            param_map.add_parameter('OUTPUT', [])
