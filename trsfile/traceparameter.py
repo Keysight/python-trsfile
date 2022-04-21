@@ -61,6 +61,9 @@ class ByteArrayParameter(TraceParameter):
     def __len__(self):
         return len(bytes(self.value))
 
+    def __eq__(self, other):
+        return bytearray(self.value) == bytearray(other.value)
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         param_value = list(io_bytes.read(ParameterType.BYTE.byte_size * param_length))
@@ -143,6 +146,9 @@ class ShortArrayParameter(TraceParameter):
 class StringParameter(TraceParameter):
     def __len__(self):
         return len(self.value.encode(UTF_8))
+
+    def __eq__(self, other):
+        return self.value.encode(UTF_8) == other.value.encode(UTF_8)
 
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
