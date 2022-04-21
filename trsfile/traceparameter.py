@@ -6,9 +6,17 @@ from io import BytesIO
 from trsfile.utils import encode_as_short, read_short
 
 UTF_8 = 'utf-8'
+BYTE_MIN = 0
+BYTE_MAX = 255
+SHORT_MIN = -2**15
+SHORT_MAX = 2**15-1
+INT_MIN = -2**31
+INT_MAX = 2**31-1
 
 
 class TraceParameter(ABC):
+    _expected_type_string = "None"
+
     @staticmethod
     @abstractmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
@@ -18,16 +26,23 @@ class TraceParameter(ABC):
     def serialize(self) -> bytes:
         pass
 
+    @staticmethod
+    @abstractmethod
+    def _has_expected_type(value) -> bool:
+        pass
+
     def __init__(self, value):
         if type(value) is not str and (value is None or len(value) <= 0):
             raise ValueError('The value for a TraceParameter cannot be empty')
+        if not type(self)._has_expected_type(value):
+            raise TypeError(f'A {type(self).__name__} must have a value of {type(self)._expected_type_string}')
         self.value = value
 
     def __len__(self):
         return len(self.value)
 
     def __eq__(self, other):
-        return self.value == other.value
+        return isinstance(other, type(self)) and self.value == other.value
 
     def __str__(self):
         return str(self.value)
@@ -42,6 +57,8 @@ class TraceSetParameter:
 
 
 class BooleanArrayParameter(TraceParameter):
+    _expected_type_string = "List[bool] type"
+
     def __len__(self):
         return len(bytes(self.value))
 
@@ -56,13 +73,24 @@ class BooleanArrayParameter(TraceParameter):
         out.extend(bytes(self.value))
         return bytes(out)
 
+    @staticmethod
+    def _has_expected_type(value):
+        if type(value) is not list:
+            return False
+        for elem in value:
+            if type(elem) is not bool:
+                return False
+        return True
+
 
 class ByteArrayParameter(TraceParameter):
+    _expected_type_string = f"bytearray, bytes, or List[int] type, where the int values are in range({BYTE_MIN}, {BYTE_MAX + 1})"
+
     def __len__(self):
         return len(bytes(self.value))
 
     def __eq__(self, other):
-        return bytearray(self.value) == bytearray(other.value)
+        return isinstance(other, ByteArrayParameter) and bytearray(self.value) == bytearray(other.value)
 
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
@@ -77,8 +105,21 @@ class ByteArrayParameter(TraceParameter):
         out.extend(bytes(self.value))
         return bytes(out)
 
+    @staticmethod
+    def _has_expected_type(value):
+        if type(value) is bytes or type(value) is bytearray:
+            return True
+        if type(value) is not list:
+            return False
+        for elem in value:
+            if type(elem) is not int or elem < BYTE_MIN or elem > BYTE_MAX:
+                return False
+        return True
+
 
 class DoubleArrayParameter(TraceParameter):
+    _expected_type_string = "List[float] type"
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         param_value = [struct.unpack('<d', io_bytes.read(ParameterType.DOUBLE.byte_size))[0] for i in range(param_length)]
@@ -90,8 +131,19 @@ class DoubleArrayParameter(TraceParameter):
             out.extend(struct.pack('<d', x))
         return bytes(out)
 
+    @staticmethod
+    def _has_expected_type(value):
+        if type(value) is not list:
+            return False
+        for elem in value:
+            if type(elem) is not float and type(elem) is not int:
+                return False
+        return True
+
 
 class FloatArrayParameter(TraceParameter):
+    _expected_type_string = "List[float] type"
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         param_value = [struct.unpack('<f', io_bytes.read(ParameterType.FLOAT.byte_size))[0] for i in range(param_length)]
@@ -103,8 +155,19 @@ class FloatArrayParameter(TraceParameter):
             out.extend(struct.pack('<f', x))
         return bytes(out)
 
+    @staticmethod
+    def _has_expected_type(value):
+        if type(value) is not list:
+            return False
+        for elem in value:
+            if type(elem) is not float and type(elem) is not int:
+                return False
+        return True
+
 
 class IntegerArrayParameter(TraceParameter):
+    _expected_type_string = f"List[int] type where the int values are in range({INT_MIN}, {INT_MAX + 1})"
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         param_value = [struct.unpack('<i', io_bytes.read(ParameterType.INT.byte_size))[0] for i in range(param_length)]
@@ -116,8 +179,19 @@ class IntegerArrayParameter(TraceParameter):
             out.extend(struct.pack('<i', x))
         return bytes(out)
 
+    @staticmethod
+    def _has_expected_type(value):
+        if type(value) is not list:
+            return False
+        for elem in value:
+            if type(elem) is not int or elem < INT_MIN or elem > INT_MAX:
+                return False
+        return True
+
 
 class LongArrayParameter(TraceParameter):
+    _expected_type_string = "List[int] type"
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         param_value = [struct.unpack('<q', io_bytes.read(ParameterType.LONG.byte_size))[0] for i in range(param_length)]
@@ -129,8 +203,19 @@ class LongArrayParameter(TraceParameter):
             out.extend(struct.pack('<q', x))
         return bytes(out)
 
+    @staticmethod
+    def _has_expected_type(value):
+        if type(value) is not list:
+            return False
+        for elem in value:
+            if type(elem) is not int:
+                return False
+        return True
+
 
 class ShortArrayParameter(TraceParameter):
+    _expected_type_string = f"List[int] type where the int values are in range({SHORT_MIN}, {SHORT_MAX + 1})"
+
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
         param_value = [struct.unpack('<h', io_bytes.read(ParameterType.SHORT.byte_size))[0] for i in range(param_length)]
@@ -142,13 +227,24 @@ class ShortArrayParameter(TraceParameter):
             out.extend(struct.pack('<h', x))
         return bytes(out)
 
+    @staticmethod
+    def _has_expected_type(value):
+        if type(value) is not list:
+            return False
+        for elem in value:
+            if type(elem) is not int or elem < SHORT_MIN or elem > SHORT_MAX:
+                return False
+        return True
+
 
 class StringParameter(TraceParameter):
+    _expected_type_string = "str type"
+
     def __len__(self):
         return len(self.value.encode(UTF_8))
 
     def __eq__(self, other):
-        return self.value.encode(UTF_8) == other.value.encode(UTF_8)
+        return isinstance(other, StringParameter) and self.value.encode(UTF_8) == other.value.encode(UTF_8)
 
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int):
@@ -161,6 +257,10 @@ class StringParameter(TraceParameter):
         encoded_string = self.value.encode(UTF_8)
         out.extend(encoded_string)
         return bytes(out)
+
+    @staticmethod
+    def _has_expected_type(value):
+        return type(value) is str
 
 
 class ParameterType(Enum):
