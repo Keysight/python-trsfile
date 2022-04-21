@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
+from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
 from trsfile.traceparameter import *
 
 
@@ -71,6 +72,21 @@ class TestTraceSetParameterMap(TestCase):
         with self.assertRaises(TypeError):
             param_map.add_parameter('param10', [])
 
+    def test_add_standard_parameter(self):
+        param_map1 = TraceSetParameterMap()
+        param_map1.add_standard_parameter(StandardTraceSetParameters.KEY,
+                                          bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map2 = TraceSetParameterMap()
+        param_map2.add_parameter('KEY', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        self.assertDictEqual(param_map1, param_map2)
+
+        # Verify that standard trace set parameters enforce a specific type
+        with self.assertRaises(TypeError):
+            param_map1.add_standard_parameter(StandardTraceSetParameters.KEY, 'cafebabedeadbeef0102030405060708')
+        # Type checking even occurs when adding a parameter with the id of a standard trace set parameter
+        with self.assertRaises(TypeError):
+            param_map1.add_parameter('KEY', 'cafebabedeadbeef0102030405060708')
+
 
 class TestTraceParameterDefinitionMap(TestCase):
     SERIALIZED_DEFINITION = b'\x03\x00' \
@@ -121,7 +137,7 @@ class TestTraceParameterMap(TestCase):
     @staticmethod
     def create_parametermap() -> TraceParameterMap:
         param_map = TraceParameterMap()
-        param_map['INPUT'] = ByteArrayParameter(list(TestTraceParameterMap.CAFEBABE))
+        param_map['IN'] = ByteArrayParameter(list(TestTraceParameterMap.CAFEBABE))
         param_map['TITLE'] = StringParameter('Hello, world!')
         param_map['中文'] = StringParameter('你好，世界')
         return param_map
@@ -137,7 +153,7 @@ class TestTraceParameterMap(TestCase):
 
     def test_add_parameter(self):
         param_map = TraceParameterMap()
-        param_map.add_parameter('INPUT', TestTraceParameterMap.CAFEBABE)
+        param_map.add_parameter('IN', TestTraceParameterMap.CAFEBABE)
         param_map.add_parameter('TITLE', 'Hello, world!')
         param_map.add_parameter('中文', '你好，世界')
         expected_map = self.create_parametermap()
@@ -148,10 +164,25 @@ class TestTraceParameterMap(TestCase):
         self.assertEqual(param_map['HAS_KEY'], BooleanArrayParameter([False]))
 
         with self.assertRaises(TypeError):
-            param_map.add_parameter('OUTPUT', [False, 0, 'None'])
+            param_map.add_parameter('OUT', [False, 0, 'None'])
         with self.assertRaises(TypeError):
-            param_map.add_parameter('OUTPUT', None)
+            param_map.add_parameter('OUT', None)
         with self.assertRaises(TypeError):
-            param_map.add_parameter('OUTPUT', [bytes.fromhex('cafebabedeadbeef'), bytes.fromhex('0102030405060708')])
+            param_map.add_parameter('OUT', [bytes.fromhex('cafebabedeadbeef'), bytes.fromhex('0102030405060708')])
         with self.assertRaises(TypeError):
-            param_map.add_parameter('OUTPUT', [])
+            param_map.add_parameter('OUT', [])
+
+    def test_add_standard_parameter(self):
+        param_map1 = TraceParameterMap()
+        param_map1.add_standard_parameter(StandardTraceParameters.INPUT,
+                                          bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map2 = TraceParameterMap()
+        param_map2.add_parameter('INPUT', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        self.assertDictEqual(param_map1, param_map2)
+
+        # Verify that standard trace parameters enforce a specific type
+        with self.assertRaises(TypeError):
+            param_map1.add_standard_parameter(StandardTraceParameters.INPUT, 'cafebabedeadbeef0102030405060708')
+        # Type checking even occurs when adding a parameter with the id of a standard trace parameter
+        with self.assertRaises(TypeError):
+            param_map1.add_parameter('INPUT', 'cafebabedeadbeef0102030405060708')

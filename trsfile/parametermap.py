@@ -1,6 +1,7 @@
 import copy
 import numbers
 
+from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
 from trsfile.traceparameter import TraceSetParameter, TraceParameter, TraceParameterDefinition, ParameterType, \
     BooleanArrayParameter, ByteArrayParameter, StringParameter, DoubleArrayParameter, IntegerArrayParameter, \
     LongArrayParameter, ShortArrayParameter
@@ -171,9 +172,20 @@ class TraceSetParameterMap(LockableDict):
         super().__setitem__(key, value)
 
     def add_parameter(self, name: str, value):
-        """Add a trace set parameter with a given name and value"""
-        typed_param = ParameterMapUtil.get_typed_parameter(value)
+        """Add a trace set parameter with a given name and value.
+        If the name matches the identifier of a standard trace set parameter,
+        then the value's type should be the type that standard trace set parameter expects"""
+        try:
+            std_param = StandardTraceSetParameters.from_identifier(name)
+            typed_param = std_param.parameter_type.param_class
+        except TypeError:
+            typed_param = ParameterMapUtil.get_typed_parameter(value)
         self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+
+    def add_standard_parameter(self, std_trace_set_param: StandardTraceSetParameters, value):
+        """Add a standard trace set parameter with a given value"""
+        typed_param = std_trace_set_param.parameter_type.param_class
+        self[std_trace_set_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
 
     @staticmethod
     def deserialize(raw: BytesIO):
@@ -259,9 +271,20 @@ class TraceParameterMap(StringKeyOrderedDict):
         super().__setitem__(key, value)
 
     def add_parameter(self, name: str, value):
-        """Add a trace parameter with a given name and value"""
-        typed_param = ParameterMapUtil.get_typed_parameter(value)
+        """Add a trace parameter with a given name and value
+        If the name matches the identifier of a standard trace parameter,
+        then the value's type should be the type that standard trace parameter expects"""
+        try:
+            std_param = StandardTraceParameters.from_identifier(name)
+            typed_param = std_param.parameter_type.param_class
+        except TypeError:
+            typed_param = ParameterMapUtil.get_typed_parameter(value)
         self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+
+    def add_standard_parameter(self, std_trace_param: StandardTraceParameters, value):
+        """Add a standard trace parameter with a given value"""
+        typed_param = std_trace_param.parameter_type.param_class
+        self[std_trace_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
 
     @staticmethod
     def deserialize(raw: bytes, definitions: TraceParameterDefinitionMap):
