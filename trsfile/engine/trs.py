@@ -36,6 +36,8 @@ class TrsEngine(Engine):
 	+--------------+-----------------------------------------------------------+
 	"""
 
+	_TRACE_BLOCK_START = bytes([Header.TRACE_BLOCK.value, 0])
+
 	def __init__(self, path, mode = 'x', **options):
 		self.path = path if type(path) is str else str(path)
 		self.handle = None
@@ -146,6 +148,9 @@ class TrsEngine(Engine):
 
 	def is_closed(self):
 		return self.handle is None or self.handle.closed
+
+	def has_trace_data(self):
+		return self.handle.size() > self.traceblock_offset
 
 	def set_traces(self, index, traces):
 		# Make sure we have proper indexing
@@ -340,6 +345,14 @@ class TrsEngine(Engine):
 			self.file_handle.close()
 
 	def update_headers(self, headers):
+		new_key = False
+		for header_key, header_value in headers.items():
+			if header_key not in self.headers:
+				new_key = True
+				break
+		if self.has_trace_data() and new_key:
+			raise IOError("Cannot add another header item if the traceset already contains trace data")
+
 		changed_headers = super().update_headers(headers)
 		if len(changed_headers) > 0:
 			self.__write_headers(changed_headers)
@@ -381,6 +394,8 @@ class TrsEngine(Engine):
 		self.__write_headers()
 
 	def __write_headers(self, headers = None):
+		# Write the headers to the file. WARNING: Do not call if the new headers have a different size than the
+		# existing ones and trace data has already been written to the file.
 		if headers is None:
 			headers = self.headers
 
@@ -413,8 +428,10 @@ class TrsEngine(Engine):
 				tag_value = value
 			elif header.type is TraceSetParameterMap:
 				tag_value = value.serialize()
+				value.lock_content()
 			elif header.type is TraceParameterDefinitionMap:
 				tag_value = value.serialize()
+				value.lock_content()
 			else:
 				raise TypeError('Header has a type that can not be serialized')
 
@@ -439,6 +456,12 @@ class TrsEngine(Engine):
 					tag += [tag_length]
 				tag += tag_value
 
+				# If the TRACE_BLOCK was already saved, overwrite it with the TRACE_BLOCK
+				if Header.TRACE_BLOCK in self.header_locations:
+					self.handle.seek(self.traceblock_offset - len(TrsEngine._TRACE_BLOCK_START))
+					self.header_locations.pop(Header.TRACE_BLOCK)
+					self.traceblock_offset = None
+
 				# Store this index for future references
 				if self.handle.size() < self.handle.tell() + len(tag):
 					self.handle.resize(self.handle.tell() + len(tag))
@@ -448,13 +471,13 @@ class TrsEngine(Engine):
 		# Save the TRACE_BLOCK if not already saved
 		if Header.TRACE_BLOCK not in self.header_locations:
 			# Write the TRACE_BLOCK
-			if self.handle.size() < self.handle.tell() + 2:
-				self.handle.resize(self.handle.tell() + 2)
-			self.handle.write(bytes([Header.TRACE_BLOCK.value, 0]))
+			if self.handle.size() < self.handle.tell() + len(TrsEngine._TRACE_BLOCK_START):
+				self.handle.resize(self.handle.tell() + len(TrsEngine._TRACE_BLOCK_START))
+			self.handle.write(TrsEngine._TRACE_BLOCK_START)
 
 			# Calculate offset
 			self.traceblock_offset = self.handle.tell()
-			self.header_locations[Header.TRACE_BLOCK] = None
+			self.header_locations[Header.TRACE_BLOCK] = (self.handle.tell(), 0)
 		elif self.traceblock_offset is None:
 			# This should never happen, but who knows?!
 			raise NotImplementedError('Trace block offset is still None but TRACE_BLOCK TLV already in headers?!?!?!')
