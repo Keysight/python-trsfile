@@ -36,6 +36,8 @@ class TrsEngine(Engine):
 	+--------------+-----------------------------------------------------------+
 	"""
 
+	_TRACE_BLOCK_START = bytes([Header.TRACE_BLOCK.value, 0])
+
 	def __init__(self, path, mode = 'x', **options):
 		self.path = path if type(path) is str else str(path)
 		self.handle = None
@@ -456,7 +458,7 @@ class TrsEngine(Engine):
 
 				# If the TRACE_BLOCK was already saved, overwrite it with the TRACE_BLOCK
 				if Header.TRACE_BLOCK in self.header_locations:
-					self.handle.seek(self.traceblock_offset - 2)
+					self.handle.seek(self.traceblock_offset - len(TrsEngine._TRACE_BLOCK_START))
 					self.header_locations.pop(Header.TRACE_BLOCK)
 					self.traceblock_offset = None
 
@@ -469,9 +471,9 @@ class TrsEngine(Engine):
 		# Save the TRACE_BLOCK if not already saved
 		if Header.TRACE_BLOCK not in self.header_locations:
 			# Write the TRACE_BLOCK
-			if self.handle.size() < self.handle.tell() + 2:
-				self.handle.resize(self.handle.tell() + 2)
-			self.handle.write(bytes([Header.TRACE_BLOCK.value, 0]))
+			if self.handle.size() < self.handle.tell() + len(TrsEngine._TRACE_BLOCK_START):
+				self.handle.resize(self.handle.tell() + len(TrsEngine._TRACE_BLOCK_START))
+			self.handle.write(TrsEngine._TRACE_BLOCK_START)
 
 			# Calculate offset
 			self.traceblock_offset = self.handle.tell()
