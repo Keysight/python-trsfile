@@ -199,6 +199,15 @@ class TraceSetParameterMap(LockableDict):
         typed_param = std_trace_set_param.parameter_type.param_class
         self[std_trace_set_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
 
+    def fill_from_headers(self, headers):
+        """Add to this trace set parameter map all data that is in the header
+        and for which standard trace set parameters exist.
+        Data that already exists in the map will not be overwritten"""
+        for header_tag, value in headers.items():
+            std_param = header_tag.equivalent_std_param
+            if std_param is not None and std_param.identifier not in self:
+                self.add_standard_parameter(std_param, value)
+
     def add_defaults(self):
         """If specific standard trace set parameters don't exist yet in the map, add them with default values"""
         for key, value in TraceSetParameterMap.default_values.items():

@@ -455,6 +455,8 @@ class TrsEngine(Engine):
 			elif header.type is bytes:
 				tag_value = value
 			elif header.type is TraceSetParameterMap:
+				# update the trace set parameter map with data from the header and with defaults
+				value.fill_from_headers(self.headers)
 				value.add_defaults()
 				tag_value = value.serialize()
 				value.lock_content()

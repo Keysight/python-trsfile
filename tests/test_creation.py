@@ -8,6 +8,7 @@ import shutil
 
 from trsfile import Trace, SampleCoding, Header, TracePadding
 from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap, TraceSetParameterMap
+from trsfile.standardparameters import StandardTraceSetParameters
 from trsfile.traceparameter import ByteArrayParameter, TraceParameterDefinition, ParameterType, StringParameter, \
 	IntegerArrayParameter, BooleanArrayParameter, FloatArrayParameter
 
@@ -93,6 +94,87 @@ class TestCreation(unittest.TestCase):
 				self.assertDictEqual(headers[Header.TRACE_PARAMETER_DEFINITIONS], expected_definitions)
 				self.assertDictEqual(headers[Header.TRACE_SET_PARAMETERS], default_trace_set_parameters)
 				self.assertEqual(headers[Header.TRS_VERSION], 2)
+		except Exception as e:
+			self.fail('Exception occurred: ' + str(e))
+
+	def test_header_to_trace_set_params(self):
+		"""Verify that every header tag is converted correctly into the equivalent trace set parameter"""
+		trace_count = 100
+		sample_count = 1000
+
+		try:
+			with trsfile.open(self.tmp_path, 'w', headers={
+				Header.LABEL_X: "s",
+				Header.LABEL_Y: "V",
+				Header.OFFSET_X: 100,
+				Header.SCALE_X: 1.1,
+				Header.SCALE_Y: 0.9,
+				Header.TRACE_OFFSET: 200,
+				Header.LOGARITHMIC_SCALE: False,
+				Header.ACQUISITION_RANGE_OF_SCOPE: 1.0,
+				Header.ACQUISITION_COUPLING_OF_SCOPE: 2,
+				Header.ACQUISITION_OFFSET_OF_SCOPE: 3.0,
+				Header.ACQUISITION_INPUT_IMPEDANCE: 4.0,
+				Header.ACQUISITION_DEVICE_ID: '5',
+				Header.ACQUISITION_TYPE_FILTER: 6,
+				Header.ACQUISITION_FREQUENCY_FILTER: 7.0,
+				Header.ACQUISITION_RANGE_FILTER: 8.0,
+				Header.EXTERNAL_CLOCK_USED: True,
+				Header.EXTERNAL_CLOCK_THRESHOLD: 9.0,
+				Header.EXTERNAL_CLOCK_MULTIPLIER: 10,
+				Header.EXTERNAL_CLOCK_PHASE_SHIFT: 11,
+				Header.EXTERNAL_CLOCK_RESAMPLER_MASK: 12,
+				Header.EXTERNAL_CLOCK_RESAMPLER_ENABLED: False,
+				Header.EXTERNAL_CLOCK_FREQUENCY: 13.0,
+				Header.EXTERNAL_CLOCK_BASE: 14,
+				Header.NUMBER_VIEW: 15,
+				Header.TRACE_OVERLAP: True,
+				Header.NUMBER_OF_ENABLED_CHANNELS: 16,
+				Header.NUMBER_OF_USED_OSCILLOSCOPES: 17,
+				Header.XY_SCAN_WIDTH: 18,
+				Header.XY_SCAN_HEIGHT: 19,
+				Header.XY_MEASUREMENTS_PER_SPOT: 20,
+			}) as trs_traces:
+				trs_traces.extend([
+					Trace(
+						SampleCoding.FLOAT,
+						[0] * sample_count,
+						TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
+					)
+					for i in range(0, trace_count)]
+				)
+				expected_trace_set_parameters = TraceSetParameterMap()
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.DISPLAY_HINT_X_LABEL, "s")
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.DISPLAY_HINT_Y_LABEL, "V")
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.X_OFFSET, 100)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.X_SCALE, 1.1)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.Y_SCALE, 0.9)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.TRACE_OFFSET, 200)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.DISPLAY_HINT_USE_LOG_SCALE, False)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_OSCILLOSCOPE_RANGE, 1.0)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_OSCILLOSCOPE_COUPLING, 2)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_OSCILLOSCOPE_OFFSET, 3.0)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_OSCILLOSCOPE_INPUT_IMPEDANCE, 4.0)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_OSCILLOSCOPE_DEVICE_IDENTIFIER, '5')
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_FILTER_TYPE, 6)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_FILTER_FREQUENCY, 7.0)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_FILTER_RANGE, 8.0)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_ENABLED, True)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_THRESHOLD, 9.0)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_MULTIPLIER, 10)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_PHASESHIFT, 11)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_RESAMPLER_MASK, 12)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_RESAMPLER_MASK_ENABLED, False)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_FREQUENCY, 13.0)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_ICWAVES_EXT_CLK_TIMEBASE, 14)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.DISPLAY_HINT_NUM_TRACES_SHOWN, 15)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.DISPLAY_HINT_TRACES_OVERLAP, True)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_OSCILLOSCOPE_ACTIVE_CHANNEL_COUNT, 16)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_OSCILLOSCOPE_COUNT, 17)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_XYZ_GRID_COUNT_X, 18)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_XYZ_GRID_COUNT_Y, 19)
+				expected_trace_set_parameters.add_standard_parameter(StandardTraceSetParameters.SETUP_XYZ_MEASUREMENTS_PER_SPOT, 20)
+				self.assertDictEqual(trs_traces.get_headers()[Header.TRACE_SET_PARAMETERS], expected_trace_set_parameters)
 		except Exception as e:
 			self.fail('Exception occurred: ' + str(e))
 
