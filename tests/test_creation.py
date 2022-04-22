@@ -7,8 +7,9 @@ import math
 import shutil
 
 from trsfile import Trace, SampleCoding, Header, TracePadding
-from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap
-from trsfile.traceparameter import ByteArrayParameter, TraceParameterDefinition, ParameterType
+from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap, TraceSetParameterMap
+from trsfile.traceparameter import ByteArrayParameter, TraceParameterDefinition, ParameterType, StringParameter, \
+	IntegerArrayParameter, BooleanArrayParameter, FloatArrayParameter
 
 
 def get_sample(x):
@@ -64,6 +65,18 @@ class TestCreation(unittest.TestCase):
 		trace_count = 100
 		sample_count = 1000
 
+		default_trace_set_parameters = TraceSetParameterMap({
+			'DISPLAY_HINT:X_LABEL': StringParameter(""),
+			'DISPLAY_HINT:Y_LABEL': StringParameter(""),
+			'DISPLAY_HINT:NUM_TRACES_SHOWN': IntegerArrayParameter([1]),
+			'DISPLAY_HINT:TRACES_OVERLAP': BooleanArrayParameter([False]),
+			'DISPLAY_HINT:USE_LOG_SCALE': BooleanArrayParameter([False]),
+			'X_OFFSET': IntegerArrayParameter([0]),
+			'TRACE_OFFSET': IntegerArrayParameter([0]),
+			'X_SCALE': FloatArrayParameter([1.0]),
+			'Y_SCALE': FloatArrayParameter([1.0])
+		})
+
 		try:
 			with trsfile.open(self.tmp_path, 'w') as trs_traces:
 				trs_traces.extend([
@@ -74,9 +87,12 @@ class TestCreation(unittest.TestCase):
 					)
 					for i in range(0, trace_count)]
 				)
+				headers = trs_traces.get_headers()
 				expected_definitions = TraceParameterDefinitionMap(
 					{'LEGACY_DATA': TraceParameterDefinition(ParameterType.BYTE, 8, 0)})
-				self.assertDictEqual(trs_traces.get_headers()[Header.TRACE_PARAMETER_DEFINITIONS], expected_definitions)
+				self.assertDictEqual(headers[Header.TRACE_PARAMETER_DEFINITIONS], expected_definitions)
+				self.assertDictEqual(headers[Header.TRACE_SET_PARAMETERS], default_trace_set_parameters)
+				self.assertEqual(headers[Header.TRS_VERSION], 2)
 		except Exception as e:
 			self.fail('Exception occurred: ' + str(e))
 

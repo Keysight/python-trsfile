@@ -164,6 +164,18 @@ class LockableDict(StringKeyOrderedDict):
 
 
 class TraceSetParameterMap(LockableDict):
+    default_values = {
+        StandardTraceSetParameters.DISPLAY_HINT_X_LABEL: "",
+        StandardTraceSetParameters.DISPLAY_HINT_Y_LABEL: "",
+        StandardTraceSetParameters.DISPLAY_HINT_NUM_TRACES_SHOWN: 1,
+        StandardTraceSetParameters.DISPLAY_HINT_TRACES_OVERLAP: False,
+        StandardTraceSetParameters.DISPLAY_HINT_USE_LOG_SCALE: False,
+        StandardTraceSetParameters.X_OFFSET: 0,
+        StandardTraceSetParameters.TRACE_OFFSET: 0,
+        StandardTraceSetParameters.X_SCALE: 1.0,
+        StandardTraceSetParameters.Y_SCALE: 1.0
+    }
+
     def __setitem__(self, key, value):
         if not isinstance(value, TraceParameter) or type(value) is TraceSetParameter:
             raise TypeError('The value for a TraceSetParameterMap entry must be a specific subclass'
@@ -186,6 +198,12 @@ class TraceSetParameterMap(LockableDict):
         """Add a standard trace set parameter with a given value"""
         typed_param = std_trace_set_param.parameter_type.param_class
         self[std_trace_set_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+
+    def add_defaults(self):
+        """If specific standard trace set parameters don't exist yet in the map, add them with default values"""
+        for key, value in TraceSetParameterMap.default_values.items():
+            if key.identifier not in self:
+                self.add_standard_parameter(key, value)
 
     @staticmethod
     def deserialize(raw: BytesIO):

@@ -231,6 +231,11 @@ class TrsEngine(Engine):
 		else:
 			raise NotImplementedError('This padding mode is not supported')
 
+		# If this is writing the first trace, finalize the headers
+		if indexes[0] == 0 and Header.TRACE_SET_PARAMETERS not in self.headers:
+			self.update_headers({Header.TRACE_SET_PARAMETERS: TraceSetParameterMap(),
+								 Header.TRS_VERSION: 2})
+
 		# Pre-compute some static information based on headers
 		if self.sample_length is None:
 			self.sample_length = self.headers[Header.NUMBER_SAMPLES] * self.headers[Header.SAMPLE_CODING].size
@@ -450,6 +455,7 @@ class TrsEngine(Engine):
 			elif header.type is bytes:
 				tag_value = value
 			elif header.type is TraceSetParameterMap:
+				value.add_defaults()
 				tag_value = value.serialize()
 				value.lock_content()
 			elif header.type is TraceParameterDefinitionMap:
