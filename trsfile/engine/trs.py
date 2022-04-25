@@ -153,7 +153,7 @@ class TrsEngine(Engine):
         return self.handle is None or self.handle.closed
 
     def has_trace_data(self) -> bool:
-        return self.handle.size() > self.traceblock_offset
+        return self.traceblock_offset is not None and self.handle.size() > self.traceblock_offset
 
     def update_headers_with_traces_metadata(self, traces: List[Trace]) -> None:
         # Check if any of the following headers are NOT initialized:
@@ -176,9 +176,7 @@ class TrsEngine(Engine):
             data_length = len(traces[0].parameters.serialize())
 
             # Add a TraceParameterDefinitionMap if none is present, and verify its validity if one is present
-            if Header.TRACE_PARAMETER_DEFINITIONS not in self.headers \
-                    or self.headers[Header.TRACE_PARAMETER_DEFINITIONS] is None \
-                    or self.headers[Header.TRACE_PARAMETER_DEFINITIONS].get_total_size() == 0:
+            if Header.TRACE_PARAMETER_DEFINITIONS not in self.headers:
                 if data_length > 0:
                     headers_updates[Header.TRACE_PARAMETER_DEFINITIONS] = \
                         TraceParameterDefinitionMap.from_trace_parameter_map(traces[0].parameters)
@@ -375,14 +373,6 @@ class TrsEngine(Engine):
             self.file_handle.close()
 
     def update_headers(self, headers: Dict[Header, Any]):
-        new_key = False
-        for header_key, header_value in headers.items():
-            if header_key not in self.headers:
-                new_key = True
-                break
-        if self.has_trace_data() and new_key:
-            raise IOError("Cannot add another header item if the traceset already contains trace data")
-
         changed_headers = super().update_headers(headers)
         if len(changed_headers) > 0:
             self.__write_headers(changed_headers)
@@ -413,7 +403,7 @@ class TrsEngine(Engine):
                 (Header.TRS_VERSION not in self.headers or self.headers[Header.TRS_VERSION] < 2):
             self.headers[Header.TRS_VERSION] = 2
 
-        # Finally add some extra headers that are freaking useful if they are not provided
+        # Finally add some additional useful headers if they are not provided
         # This is up for debate if some things are missing
         if Header.TITLE_SPACE not in self.headers:
             self.headers[Header.TITLE_SPACE] = Header.TITLE_SPACE.default
@@ -424,10 +414,20 @@ class TrsEngine(Engine):
         self.__write_headers()
 
     def __write_headers(self, headers: Optional[Dict[Header, Any]] = None):
-        # Write the headers to the file. WARNING: Do not call if the new headers have a different size than the
-        # existing ones and trace data has already been written to the file.
+        """Write the headers to the file.
+        Throws an error if an existing header element receives a new value with a different size, or if
+        a new element is added after trace data has already been written to the trs file"""
         if headers is None:
             headers = self.headers
+
+        # Cannot add a new tag into the header if trace data has already been written into the trs file
+        new_key = False
+        for header_key, header_value in headers.items():
+            if header_key not in self.header_locations:
+                new_key = True
+                break
+        if self.has_trace_data() and new_key:
+            raise IOError("Cannot add another header item if the traceset already contains trace data")
 
         # Check if we have any work to do
         if len(headers) <= 0:
