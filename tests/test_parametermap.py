@@ -61,7 +61,7 @@ class TestTraceSetParameterMap(TestCase):
 
         # A single integer should be stored in an array:
         param_map.add_parameter('param9', 1)
-        self.assertEqual(param_map['param9'], IntegerArrayParameter([1]))
+        self.assertEqual(param_map['param9'], ShortArrayParameter([1]))
 
         with self.assertRaises(TypeError):
             param_map.add_parameter('param10', [False, 0, 'None'])
@@ -90,14 +90,14 @@ class TestTraceSetParameterMap(TestCase):
 
 class TestTraceParameterDefinitionMap(TestCase):
     SERIALIZED_DEFINITION = b'\x03\x00' \
-                            b'\x05\x00INPUT\x01\x10\x00\x00\x00' \
+                            b'\x02\x00IN\x01\x10\x00\x00\x00' \
                             b'\x05\x00TITLE\x20\x0d\x00\x10\x00' \
                             b'\x06\x00\xe4\xb8\xad\xe6\x96\x87\x20\x0f\x00\x1d\x00'
 
     @staticmethod
     def create_parameterdefinitionmap() -> TraceParameterDefinitionMap:
         param_map = TraceParameterDefinitionMap()
-        param_map['INPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
+        param_map['IN'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
         param_map['TITLE'] = TraceParameterDefinition(ParameterType.STRING, 13, 16)
         param_map['中文'] = TraceParameterDefinition(ParameterType.STRING, 15, 29)
         return param_map
@@ -105,7 +105,7 @@ class TestTraceParameterDefinitionMap(TestCase):
     @staticmethod
     def create_traceparametermap() -> TraceParameterMap:
         param_map = TraceParameterMap()
-        param_map['INPUT'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map['IN'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
         param_map['TITLE'] = StringParameter('Hello, world!')
         param_map['中文'] = StringParameter('你好，世界')
         return param_map
