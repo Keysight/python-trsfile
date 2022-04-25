@@ -1,10 +1,15 @@
+from __future__ import annotations
 from enum import Enum
 
 from trsfile.traceparameter import ParameterType
 
 
 class StandardTraceSetParameters(Enum):
-    def __new__(cls, tag, identifier, parameter_type):
+    """While running modules on tracesets or displaying tracesets, Inspector or Inspector FI Python utilize
+    TraceSetParameters with specific names and types to be present in those tracesets. This class denotes which trace
+    set parameter names are reserved for use by Riscure programs, and the types they are expected to have"""
+    
+    def __new__(cls, tag: int, identifier: str, parameter_type: ParameterType):
         obj = object.__new__(cls)
         obj._value_ = tag
         obj.identifier = identifier
@@ -12,7 +17,7 @@ class StandardTraceSetParameters(Enum):
         return obj
 
     @staticmethod
-    def from_identifier(identifier):
+    def from_identifier(identifier: str) -> StandardTraceSetParameters:
         for val in StandardTraceSetParameters:
             if identifier is val.identifier:
                 return val
@@ -60,7 +65,11 @@ class StandardTraceSetParameters(Enum):
 
 
 class StandardTraceParameters(Enum):
-    def __new__(cls, tag, identifier, parameter_type):
+    """While running modules, Inspector may expect TraceParameters with specific names and types to be present in the
+    traces it runs on. This class denotes which trace parameter names are reserved for use by Riscure programs, and the
+    types they are expected to have"""
+
+    def __new__(cls, tag: int, identifier: str, parameter_type: ParameterType):
         obj = object.__new__(cls)
         obj._value_ = tag
         obj.identifier = identifier
@@ -68,7 +77,7 @@ class StandardTraceParameters(Enum):
         return obj
 
     @staticmethod
-    def from_identifier(identifier):
+    def from_identifier(identifier: str) -> StandardTraceParameters:
         for val in StandardTraceParameters:
             if identifier is val.identifier:
                 return val

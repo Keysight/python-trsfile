@@ -1,6 +1,8 @@
 import os
 import mmap
 import struct
+from typing import List, Union, Dict, Any, Optional
+
 import numpy
 import copy
 
@@ -150,10 +152,10 @@ class TrsEngine(Engine):
     def is_closed(self):
         return self.handle is None or self.handle.closed
 
-    def has_trace_data(self):
+    def has_trace_data(self) -> bool:
         return self.handle.size() > self.traceblock_offset
 
-    def update_headers_with_traces_metadata(self, traces):
+    def update_headers_with_traces_metadata(self, traces: List[Trace]) -> None:
         # Check if any of the following headers are NOT initialized:
         # - NUMBER_SAMPLES
         # - LENGTH_DATA
@@ -196,7 +198,7 @@ class TrsEngine(Engine):
         # Now update headers
         self.update_headers(headers_updates)
 
-    def set_traces(self, index, traces):
+    def set_traces(self, index: Union[slice, int], traces: List[Trace]) -> None:
         # Make sure we have proper indexing
         if isinstance(index, slice):
             start, stop, step = index.indices(index.stop)
@@ -294,7 +296,7 @@ class TrsEngine(Engine):
             else:
                 self.headers[Header.NUMBER_TRACES] = new_number_traces
 
-    def get_traces(self, index):
+    def get_traces(self, index: Union[slice, int]) -> List[Trace]:
         # check for slicing
         if isinstance(index, slice):
             # No bounds checking when using slices, that's how python rolls!
@@ -340,7 +342,7 @@ class TrsEngine(Engine):
 
         return traces
 
-    def read_parameter_data(self):
+    def read_parameter_data(self) -> TraceParameterMap:
         # Read the trace parameters
         if Header.TRS_VERSION in self.headers \
                 and self.headers[Header.TRS_VERSION] > 1 \
@@ -372,7 +374,7 @@ class TrsEngine(Engine):
         if self.file_handle is not None and not self.file_handle.closed:
             self.file_handle.close()
 
-    def update_headers(self, headers):
+    def update_headers(self, headers: Dict[Header, Any]):
         new_key = False
         for header_key, header_value in headers.items():
             if header_key not in self.headers:
@@ -385,14 +387,14 @@ class TrsEngine(Engine):
         if len(changed_headers) > 0:
             self.__write_headers(changed_headers)
 
-    def __initialize_headers(self, headers=None):
+    def __initialize_headers(self, headers: Optional[Dict[Header, Any]] = None):
         """Initialize the headers, this is done either by reading the headers from file or using headers given on creation"""
         if self.read_headers:
             self.__read_headers()
         else:
             self.__create_headers(headers)
 
-    def __create_headers(self, headers):
+    def __create_headers(self, headers: Optional[Dict[Header, Any]]):
         if headers is not None:
             self.headers = copy.deepcopy(headers)
 
@@ -421,7 +423,7 @@ class TrsEngine(Engine):
         # Write the initial headers
         self.__write_headers()
 
-    def __write_headers(self, headers=None):
+    def __write_headers(self, headers: Optional[Dict[Header, Any]] = None):
         # Write the headers to the file. WARNING: Do not call if the new headers have a different size than the
         # existing ones and trace data has already been written to the file.
         if headers is None:
@@ -513,7 +515,7 @@ class TrsEngine(Engine):
             # This should never happen, but who knows?!
             raise NotImplementedError('Trace block offset is still None but TRACE_BLOCK TLV already in headers?!?!?!')
 
-    def __read_headers(self):
+    def __read_headers(self) -> None:
         """Read all internal headers from the file"""
         self.headers = {}
         self.header_locations = {}
