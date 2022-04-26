@@ -5,7 +5,7 @@ python:
 install:
   - pip install .
 
-script: python -m unittest tests
+script: python -m unittest
 
 jobs:
   fast_finish: true
@@ -14,6 +14,7 @@ jobs:
     name: Deploy to PyPI
     python: '3.7'
     deploy:
+      skip_cleanup: true
       provider: pypi
       user: riscure
       password:
