@@ -392,11 +392,20 @@ class TraceParameterMap(StringKeyOrderedDict):
         :return:            A boolean that is true if the trace parameter definitions match the metadata of the trace
                             parameter map"""
         match = True
-        for key, definition in definitions.items():
-            if key not in self:
+        offset = 0
+        matched_keys = []
+        for key, value in self.items():
+            if key not in definitions:
                 match = False
             else:
-                match = len(self) == definition.length and ParameterType.from_class(type(self)) == definition.param_type
+                definition = definitions[key]
+                matched_keys.append(key)
+                # Confirm the length, type and offset are correct
+                match = len(value) == definition.length
+                match &= ParameterType.from_class(type(value)) == definition.param_type
+                match &= definition.offset == offset
+                offset += len(value)
             if not match:
                 break
+        match &= matched_keys == list(definitions.keys())
         return match

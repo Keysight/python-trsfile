@@ -173,6 +173,28 @@ class TestTraceParameterMap(TestCase):
         with self.assertRaises(TypeError):
             param_map.add_parameter('OUT', [])
 
+    def test_matches(self):
+        param_map = TraceParameterMap()
+        param_map.add_parameter('IN', TestTraceParameterMap.CAFEBABE)
+        param_map.add_parameter('TITLE', 'Hello, world!')
+        param_map.add_parameter('中文', '你好，世界')
+
+        param_defs = TestTraceParameterDefinitionMap.create_parameterdefinitionmap()
+        self.assertTrue(param_map.matches(param_defs))
+
+        wrong_param_defs = TraceParameterDefinitionMap()
+        wrong_param_defs['TITLE'] = TraceParameterDefinition(ParameterType.STRING, 13, 0)
+        wrong_param_defs['IN'] = TraceParameterDefinition(ParameterType.BYTE, 16, 13)
+        wrong_param_defs['中文'] = TraceParameterDefinition(ParameterType.STRING, 15, 29)
+        self.assertFalse(param_map.matches(wrong_param_defs))
+
+        param_map.add_parameter('HAS_KEY', False)
+        self.assertFalse(param_map.matches(param_defs))
+
+        del(param_map['HAS_KEY'])
+        param_defs['HAS_KEY'] = TraceParameterDefinition(ParameterType.BOOL, 1, 44)
+        self.assertFalse(param_map.matches(param_defs))
+
     def test_add_standard_parameter(self):
         param_map1 = TraceParameterMap()
         param_map1.add_standard_parameter(StandardTraceParameters.INPUT,
