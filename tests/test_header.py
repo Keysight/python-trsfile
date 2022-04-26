@@ -8,7 +8,7 @@ from numpy import random
 import trsfile
 from trsfile import Header, SampleCoding, Trace, TracePadding
 from trsfile.parametermap import TraceParameterDefinitionMap, TraceSetParameterMap
-from trsfile.traceparameter import FloatArrayParameter, ParameterType, TraceParameterDefinition
+from trsfile.traceparameter import FloatArrayParameter, ParameterType, TraceParameterDefinition, StringParameter
 
 
 class TestHeader(unittest.TestCase):
@@ -68,8 +68,7 @@ class TestHeader(unittest.TestCase):
         # Verify that setting the TraceSetParameterMap to one with a different length is not allowed
         with self.assertRaises(TypeError):
             new_trace_set_parameter_map = TraceSetParameterMap()
-            new_trace_set_parameter_map["X_SCALE"] = FloatArrayParameter([0.01])
-            new_trace_set_parameter_map["Y_SCALE"] = FloatArrayParameter([0.01])
+            new_trace_set_parameter_map["DESCRIPTION"] = StringParameter("Some text")
             self.trs_file.update_header(Header.TRACE_SET_PARAMETERS, new_trace_set_parameter_map)
 
     def test_trace_param_defs_append_errors(self):
@@ -117,4 +116,4 @@ class TestHeader(unittest.TestCase):
         trace = Trace(SampleCoding.BYTE, random.randint(255, size=1000))
         self.trs_file.append(trace)
         with self.assertRaises(IOError):
-            self.trs_file.update_header(Header.TRS_VERSION, 1)
+            self.trs_file.update_header(Header.DESCRIPTION, "Some text")

@@ -1,11 +1,4 @@
-import os
-import mmap
-import struct
-import numpy
-import copy
-
 from trsfile.trace import Trace
-from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
 
 # All our engines
