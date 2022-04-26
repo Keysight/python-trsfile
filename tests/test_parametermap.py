@@ -84,7 +84,8 @@ class TestTraceSetParameterMap(TestCase):
         with self.assertRaises(TypeError):
             param_map1.add_standard_parameter(StandardTraceSetParameters.KEY, 'cafebabedeadbeef0102030405060708')
         # Type checking even occurs when adding a parameter with the id of a standard trace set parameter
-        with self.assertRaises(TypeError):
+        # However, this type check only produces a warning
+        with self.assertWarns(UserWarning):
             param_map1.add_parameter('KEY', 'cafebabedeadbeef0102030405060708')
 
 
@@ -184,5 +185,6 @@ class TestTraceParameterMap(TestCase):
         with self.assertRaises(TypeError):
             param_map1.add_standard_parameter(StandardTraceParameters.INPUT, 'cafebabedeadbeef0102030405060708')
         # Type checking even occurs when adding a parameter with the id of a standard trace parameter
-        with self.assertRaises(TypeError):
+        # However, this type check only produces a warning
+        with self.assertWarns(UserWarning):
             param_map1.add_parameter('INPUT', 'cafebabedeadbeef0102030405060708')

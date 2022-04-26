@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 import numbers
+import warnings
 from typing import Any, Union, List, Dict
 
 from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
@@ -201,15 +202,22 @@ class TraceSetParameterMap(LockableDict):
         If the parameter already exists within the map, it will be overwritten.
 
         :param name:  The name of the parameter that will be added
-        :param value: The value of the parameter. If the name matches that of a standard trace set parameter, the type
-                      this value must have depends on that standard trace set parameter. Otherwise, valid types are:
-                      int, float, bool, List[int], List[float], List[bool], bytes, bytearray or str"""
+        :param value: The value of the parameter. If the name matches that of a standard trace set parameter, it is
+                      recommended that the type of the value matches that of standard trace set parameter. Otherwise,
+                      valid types are: int, float, bool, List[int], List[float], List[bool], bytes, bytearray or str"""
         try:
             std_param = StandardTraceSetParameters.from_identifier(name)
             typed_param = std_param.parameter_type.param_class
-        except TypeError:
+            self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+        # if no std_param can be found, a ValueError is raised,
+        # if adding the trace parameter to the map fails, a TypeError is raised
+        except (ValueError, TypeError) as e:
+            if isinstance(e, TypeError):
+                warnings.warn("Adding a trace set parameter with a name that matches a standard set trace parameter, "
+                              "but with a type that doesn't match that standard trace set parameter.\nThis may lead to "
+                              "unexpected behavior when displaying this traceset or processing it in Inspector")
             typed_param = ParameterMapUtil.get_typed_parameter(value)
-        self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+            self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
 
     def add_standard_parameter(self, std_trace_set_param: StandardTraceSetParameters, value: ParameterMapUtil.ParameterValueType) -> None:
         """Add a standard trace set parameter with a given value.
@@ -332,15 +340,22 @@ class TraceParameterMap(StringKeyOrderedDict):
         If the parameter already exists within the map, it will be overwritten.
 
         :param name:  The name of the parameter that will be added
-        :param value: The value of the parameter. If the name matches that of a standard trace parameter, the type this
-                      value must have depends on that standard trace parameter. Otherwise, valid types are:
-                      int, float, bool, List[int], List[float], List[bool], bytes, bytearray or str"""
+        :param value: The value of the parameter. If the name matches that of a standard trace parameter, it is
+                      recommended that the type of the value matches that of standard trace set parameter. Otherwise,
+                      valid types are: int, float, bool, List[int], List[float], List[bool], bytes, bytearray or str"""
         try:
             std_param = StandardTraceParameters.from_identifier(name)
             typed_param = std_param.parameter_type.param_class
-        except TypeError:
+            self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+        # if no std_param can be found, a ValueError is raised,
+        # if adding the trace parameter to the map fails, a TypeError is raised
+        except (TypeError, ValueError) as e:
+            if isinstance(e, TypeError):
+                warnings.warn("Adding a trace parameter with a name that matches a standard trace parameter, but with "
+                              "a type that doesn't match that standard trace parameter.\nThis may lead to unexpected "
+                              "behavior when displaying this traceset or processing this trace in Inspector")
             typed_param = ParameterMapUtil.get_typed_parameter(value)
-        self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+            self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
 
     def add_standard_parameter(self, std_trace_param: StandardTraceParameters, value: ParameterMapUtil.ParameterValueType) -> None:
         """Add a standard trace parameter with a given value.

@@ -21,7 +21,7 @@ class StandardTraceSetParameters(Enum):
         for val in StandardTraceSetParameters:
             if identifier is val.identifier:
                 return val
-        raise TypeError(f'{identifier} is not an identifier of a StandardTraceSetParameter')
+        raise ValueError(f'{identifier} is not an identifier of a StandardTraceSetParameter')
 
     KEY = (0x01, 'KEY', ParameterType.BYTE)
     X_OFFSET = (0x02, 'X_OFFSET', ParameterType.INT)
@@ -81,7 +81,7 @@ class StandardTraceParameters(Enum):
         for val in StandardTraceParameters:
             if identifier is val.identifier:
                 return val
-        raise TypeError('{} is not a name of a StandardTraceParameter'.format(identifier))
+        raise ValueError('{} is not a name of a StandardTraceParameter'.format(identifier))
 
     INPUT = (0x01, 'INPUT', ParameterType.BYTE)
     OUTPUT = (0x02, 'OUTPUT', ParameterType.BYTE)

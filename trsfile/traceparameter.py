@@ -37,7 +37,7 @@ class TraceParameter(ABC):
         if type(value) is not str and (value is None or len(value) <= 0):
             raise ValueError('The value for a TraceParameter cannot be empty')
         if not type(self)._has_expected_type(value):
-            raise TypeError(f'A {type(self).__name__} must have a value of {type(self)._expected_type_string}')
+            raise TypeError(f'A {type(self).__name__} must have a value of {type(self)._expected_type_string} type')
         self.value = value
 
     def __len__(self):
