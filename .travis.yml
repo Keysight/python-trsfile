@@ -1,6 +1,6 @@
 language: python
 python:
-  - '3.7'
+  - '3.8'
 
 install:
   - pip install .
@@ -12,7 +12,7 @@ jobs:
   include:
   - stage: deploy
     name: Deploy to PyPI
-    python: '3.7'
+    python: '3.8'
     deploy:
       provider: pypi
       user: riscure
