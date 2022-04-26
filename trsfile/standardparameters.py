@@ -19,7 +19,7 @@ class StandardTraceSetParameters(Enum):
     @staticmethod
     def from_identifier(identifier: str) -> StandardTraceSetParameters:
         for val in StandardTraceSetParameters:
-            if identifier is val.identifier:
+            if identifier == val.identifier:
                 return val
         raise ValueError(f'{identifier} is not an identifier of a StandardTraceSetParameter')
 
@@ -79,7 +79,7 @@ class StandardTraceParameters(Enum):
     @staticmethod
     def from_identifier(identifier: str) -> StandardTraceParameters:
         for val in StandardTraceParameters:
-            if identifier is val.identifier:
+            if identifier == val.identifier:
                 return val
         raise ValueError('{} is not a name of a StandardTraceParameter'.format(identifier))
 
