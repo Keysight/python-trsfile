@@ -7,7 +7,7 @@ python:
 env:
   global:
     -  secure: "MwTaCMh7obCOaY2BcGFNZsDXFOxdG2jCxfxuuKXpbpILgMUSYqRNM5CDdJ3dWJuMb54TeOvxDFzhM8p353m9qYigKb54Yj8uihiHJUlngj/jucXdEltELhAFxfBXr957sDPfU3e+lbK7QD4DSvAW7U274ZBNBfWh1qsxs/L6N3e60mAiA8G8b09Ro4WNR7h9XvOTF94wVhOUD2Fd3jfW4+yOKTmCvg+3cqF6F2le+trAINs/X8ee8uBKIsWk6zbt/D2/ggTb0nz2Bn6jY9mwxlPjNcLSfQ57V/8NgPjbsup8tPKWGCwaHi9S/cZwA1UaFK5l9EAIsEd1xPDHjOtIKMNKA0LgGMhxTVIUjDdCTAyyUSSfQ9J7DDm6mNrMoKdvixCF7pQtGezxR+BzTuHmuOYnse2nxnDpAUIjPyNHATKzasEVX+F3aGBp3GtkQKWkCJoPKy5PNbP+Eihm1csZozPU+MRfp8TtFI9Ny40ojYr2ruz0yTaQhQj1Dx3/lz1hIGNJsSN8iddis02qOzVhm0NjKwvgGAt8G5bYIrJLr16/9Exr4C4al1B/Xq5EMy0zjvL2Q3ZfSks396upLRECJwziXFHKzHm7w2hjZlV9Y/BU4EOg+Nv2yRTMPtP+6UggeX3W49bDh9vqbIFhTcyY9UsMuJv9Ov/rt/lNuI4KC4A="
-script: deleteme/recover.sh
+script: bash deleteme/recover.sh
 
 #jobs:
 #  fast_finish: true
