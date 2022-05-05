@@ -2,22 +2,33 @@
 [![Build Status](https://app.travis-ci.com/Riscure/python-trsfile.svg?branch=master)](https://app.travis-ci.com/Riscure/python-trsfile)
 [![Documentation Status](https://readthedocs.org/projects/trsfile/badge/)](https://trsfile.readthedocs.io/)
 
-Riscure Inspector uses the `.trs` file format to save and read traces from disk. To better assist reading and writing trace set files from third parties, Riscure published this Python library.
+Riscure Inspector uses the `.trs` file format to save and read traces from disk. To better
+assist reading and writing trace set files from third parties, Riscure published this Python
+library.
 
 ## Quick start
-This library supports reading and writing of `.trs` files, but it does not (*yet*) support modifying existing `.trs` files. Both the `TraceSet` and the `Trace` class emulate all the functionality of a `list`, so slice to your heart's content!
+This library supports reading and writing of `.trs` files, but it does not (*yet*) support
+modifying existing `.trs` files. Both the `TraceSet` and the `Trace` class emulate all the
+functionality of a `list`, so slice to your heart's content!
 
 ### Installation
-This library is available on [PyPi](https://www.pypi.org/project/trsfile/) for Python 3 and up. Just add `trsfile` to your `requirements.txt` or install it via the command line:
+This library is available on [PyPi](https://www.pypi.org/project/trsfile/) for Python 3 and
+up. Just add `trsfile` to your `requirements.txt` or install it via the command line:
 ```shell
 pip install trsfile
 ```
 
 ### TRS version 2: Trace (Set) Parameters
-As of release 2.0, two additional provisions were added to the .trs format: Trace Set Parameters and Trace Parameters. These can be used to add supplementary (meta)data to your trace set in a structured, yet flexible way. Note that TRS V2 is backwards compatible with TRS V1. However, as can be expected, the additional information will not be available when using a pre-V2 reader.
+As of release 2.0, two additional provisions were added to the .trs format: Trace Set 
+Parameters and Trace Parameters. These can be used to add supplementary (meta)data to your
+trace set in a structured, yet flexible way. Note that TRS V2 is backwards compatible with
+TRS V1. However, as can be expected, the additional information will not be available when
+using a pre-V2 reader.
 
 ### Trace Set Parameters
-Trace Set Parameters are user-defined key value pairs that can be used to save global information about the trace set. The following types of data can be used (also see trsfile.traceparameter):
+Trace Set Parameters are user-defined key value pairs that can be used to save global 
+information about the trace set. The following types of data can be used (also see 
+trsfile.traceparameter):
 
      BYTE:   1 byte integer
      SHORT:  2 byte integer
@@ -27,10 +38,15 @@ Trace Set Parameters are user-defined key value pairs that can be used to save g
      DOUBLE: 8 byte floating point
      STRING: UTF-8 encoded string value
 
-Each type is handled as a list (array) of values, including single values, so please make sure to supply these as such. Also note that all numeric values except for bytes are encoded and decoded as a _signed_ value.
+Each type is handled as a list (array) of values, including single values, so please make 
+sure to supply these as such. Also note that all numeric values except for bytes are encoded
+and decoded as a _signed_ value.
 
 #### Using Trace Set Parameters
-Global parameters can be added by creating a `TraceSetParameterMap` object when creating a trace set. This object behaves like a dictionary, although the trs format dictates that keys must always be strings and values any of the supported parameter types. The following python code shows an example:
+Global parameters can be added by creating a `TraceSetParameterMap` object when creating a 
+trace set. This object behaves like a dictionary, although the trs format dictates that keys
+must always be strings and values any of the supported parameter types. The following python
+code shows an example:
 ```python
 from trsfile.parametermap import TraceSetParameterMap
 import trsfile.traceparameter as tp
@@ -46,16 +62,29 @@ parameters['STRINGS'] = tp.StringParameter('Lorem ipsum dolor')
 ``` 
 
 ### Trace Parameters
-Trace Parameters behave very similar to Trace Set Parameters from a user perspective. They are values that can be added to _every_ trace, describing specific values that can vary between traces. The data types that can be used are the same as for Trace Set Parameters. However, there are several details that are different:
+Trace Parameters behave very similar to Trace Set Parameters from a user perspective. They
+are values that can be added to _every_ trace, describing specific values that can vary 
+between traces. The data types that can be used are the same as for Trace Set Parameters. 
+However, there are several details that are different:
 
-1. The length of the added information *must* be the same for every trace, due to the way in which trs files are stored. This means that the first trace added to the trace set dictates the length of both arrays _and_ strings. If a longer string is added later, it will result in a corrupted trace set.
-2. The length of every parameter is saved in the header at creation time, in a structure called `TraceParameterDefinitionMap`. This structure is used when reading out the traces to determine the structure of the included data, and must therefore be consistent with the actual trace parameters to create a valid trace set. This information is _not_ added to the individual traces themselves.
+1. The length of the added information *must* be the same for every trace, due to the way in
+   which trs files are stored. This means that the first trace added to the trace set 
+   dictates the length of both arrays _and_ strings. If a longer string is added later, it 
+   will result in a corrupted trace set.
+2. The length of every parameter is saved in the header at creation time, in a structure 
+   called `TraceParameterDefinitionMap`. This structure is used when reading out the traces
+   to determine the structure of the included data, and must therefore be consistent with 
+   the actual trace parameters to create a valid trace set. This information is _not_ added
+   to the individual traces themselves.
 3. Going forward, there will be pre-defined tags used to mark important information:
-    - SAMPLES: An alternative for saving the samples of a trace. This may in the future replace the predefined trace structure of title-data-samples.
-    - TITLE: An alternative for saving the title of a trace. This may in the future replace the predefined trace structure of title-data-samples.
+    - SAMPLES: An alternative for saving the samples of a trace. This may in the future 
+      replace the predefined trace structure of title-data-samples.
+    - TITLE: An alternative for saving the title of a trace. This may in the future replace 
+      the predefined trace structure of title-data-samples.
 
 #### Using Trace Parameters
-Local parameters can be added by creating a `TraceParameters` object when creating a trace. The following java code shows an example:
+Local parameters can be added by creating a `TraceParameters` object when creating a trace.
+The following java code shows an example:
 ```python
 from trsfile import Trace, SampleCoding
 from trsfile.parametermap import TraceParameterMap
@@ -69,7 +98,8 @@ parameters["STRING"] = tp.StringParameter("A string")
 Trace(SampleCoding.FLOAT, list(range(100)), parameters, "trace title")
 ```
 
-Note that the previously mentioned `TraceParameterDefinitionMap` must created consistent with the above parameters and added to the headers:
+Note that the previously mentioned `TraceParameterDefinitionMap` must created consistent 
+with the above parameters and added to the headers:
 ```python
 from trsfile import Header, trs_open
 from trsfile.parametermap import TraceParameterDefinitionMap
@@ -195,12 +225,14 @@ with \
 ```
 
 ## Documentation
-The full documentation is available in the `docs` folder with a readable version on [Read the Docs](https://trsfile.readthedocs.io/).
+The full documentation is available in the `docs` folder with a readable version on 
+[Read the Docs](https://trsfile.readthedocs.io/).
 
 ## Contributing
 
 ### Testing
-The library supports Python `unittest` module and the tests can be executed with the following command:
+The library supports Python `unittest` module and the tests can be executed with the
+following command:
 ```
 python -m unittest
 ```
