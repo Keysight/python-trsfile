@@ -59,7 +59,33 @@ parameters['FLOATS'] = tp.FloatArrayParameter([0.1, 0.2, 0.3])
 parameters['LONGS'] = tp.LongArrayParameter([0x7fffffffffffffff])
 parameters['DOUBLES'] = tp.DoubleArrayParameter([3.1415926535, 2.718281828])
 parameters['STRINGS'] = tp.StringParameter('Lorem ipsum dolor')
-``` 
+```
+
+It is also possible to add parameters to a TraceSetParameterMap with its `add_parameter` 
+method. This method deduces the type of parameter from the value that needs to be stored 
+in it. A value with the bytes or bytearray type will be stored asa ByteArrayParameter, and 
+an array of integers will be stored as either a ShortArrayParameter, an IntegerArrayParameter 
+or a LongArrayParameter based on their maximum and minimum value. Any list of numeric values
+that includes at least one float value will be stored as a DoubleArrayParameter, because 
+python does not distinguish between float and double. The add_parameter method also handles  
+the conversion of a singular numeric or boolean value into an array with a single entry. The 
+following code creates a TraceSetParameterMap very similar to the code above using the
+add_parameter method:
+
+```python
+from trsfile.parametermap import TraceSetParameterMap
+
+parameters = TraceSetParameterMap()
+parameters.add_parameter('BYTES', bytearray([0, 1, 255]))
+parameters.add_parameter('SHORTS', [1, 1337, -32768, 32767]) 
+parameters.add_parameter('INTS', [42, int(1e6)]) 
+parameters.add_parameter('DOUBLES1', [0.1, 0.2, 0.3]) 
+parameters.add_parameter('LONGS', 0x7fffffffffffffff)
+parameters.add_parameter('DOUBLES2', [3.1415926535, 2.718281828])
+parameters.add_parameter('STRINGS', 'Lorem ipsum dolor')
+```
+The only difference is that add_parameter adds a DoubleArrayParameter instead of a 
+FloatArrayParameter, as explained above.
 
 ### Trace Parameters
 Trace Parameters behave very similar to Trace Set Parameters from a user perspective. They
@@ -71,11 +97,11 @@ However, there are several details that are different:
    which trs files are stored. This means that the first trace added to the trace set 
    dictates the length of both arrays _and_ strings. If a longer string is added later, it 
    will result in a corrupted trace set.
-2. The length of every parameter is saved in the header at creation time, in a structure 
-   called `TraceParameterDefinitionMap`. This structure is used when reading out the traces
-   to determine the structure of the included data, and must therefore be consistent with 
-   the actual trace parameters to create a valid trace set. This information is _not_ added
-   to the individual traces themselves.
+2. The length of every parameter is saved in the header when a trace is added to the trace
+   set, in a structure called `TraceParameterDefinitionMap`. This structure is used when 
+   reading out the traces to determine the structure of the included data, and must therefore
+   be consistent with the actual trace parameters to create a valid trace set. This 
+   information is _not_ added to the individual traces themselves.
 3. Going forward, there will be pre-defined tags used to mark important information:
     - SAMPLES: An alternative for saving the samples of a trace. This may in the future 
       replace the predefined trace structure of title-data-samples.
@@ -85,37 +111,53 @@ However, there are several details that are different:
 #### Using Trace Parameters
 Local parameters can be added by creating a `TraceParameters` object when creating a trace.
 The following java code shows an example:
+
 ```python
 from trsfile import Trace, SampleCoding
 from trsfile.parametermap import TraceParameterMap
-import trsfile.traceparameter as tp
 
 parameters = TraceParameterMap()
-parameters["BYTE"] = tp.ByteArrayParameter([1, 2, 4, 8])
-parameters["INT"] = tp.IntegerArrayParameter([42])
-parameters["DOUBLE"] = tp.DoubleArrayParameter([3.14, 1.618])
-parameters["STRING"] = tp.StringParameter("A string")
+parameters.add_parameter("BYTE", bytearray([1, 2, 4, 8]))
+parameters.add_parameter("SHORT", 42)
+parameters.add_parameter("DOUBLE", [3.14, 1.618])
+parameters.add_parameter("STRING", "A string")
 Trace(SampleCoding.FLOAT, list(range(100)), parameters, "trace title")
 ```
 
-Note that the previously mentioned `TraceParameterDefinitionMap` must created consistent 
-with the above parameters and added to the headers:
-```python
-from trsfile import Header, trs_open
-from trsfile.parametermap import TraceParameterDefinitionMap
-from trsfile.traceparameter import ParameterType, TraceParameterDefinition
+Note that the previously mentioned `TraceParameterDefinitionMap` is automatically added to 
+the headers when a first Trace is added to a TraceSet. Adding this map to the headers
+manually is not recommended, because it may lead to the TraceParameterDefinitionMap not 
+accurately describing the TraceParameterMaps added to each trace.
 
-definitions = TraceParameterDefinitionMap()
-definitions["BYTE"] = TraceParameterDefinition(ParameterType.BYTE, 4, 0)
-definitions["INT"] =  TraceParameterDefinition(ParameterType.INT, 1, 4)
-definitions["DOUBLE"] = TraceParameterDefinition(ParameterType.DOUBLE, 1, 8)
-definitions["STRING"] = TraceParameterDefinition(ParameterType.STRING, 8, 16)
-
-with trs_open('trace-set.trs', 'w',
-              headers = {Header.TRACE_PARAMETER_DEFINITIONS: definitions}):
-    pass
-```
 See below for a more elaborate example on creating trace sets with parameters.
+
+### Standard parameters
+
+While working with a trace set, Riscure Inspector and Riscure Inspector FI Python may read 
+parameters with specific names to obtain the metadata they need. They then expect this data 
+to have a specific type. For example, a TraceSetParameter with the name X_SCALE is expected 
+to be a FloatArrayParameter that represents the scale of the X axis of the trace set. 
+StandardTraceParameters and StandardTraceSetParameters are enums that specify which 
+parameter names are reserved by Riscure tools in this way, and which types those parameters 
+should have. It is possible to explicitly add standard parameters to a parameter map using 
+its `add_standard_parameter` method. For example:
+
+```python
+from trsfile.parametermap import TraceSetParameterMap
+from trsfile.standardparameters import StandardTraceSetParameters
+
+parameters = TraceSetParameterMap()
+parameters.add_standard_parameter(StandardTraceSetParameters.X_SCALE, 0.1)
+parameters.add_standard_parameter(StandardTraceSetParameters.Y_SCALE, 0.5)
+parameters.add_standard_parameter(StandardTraceSetParameters.KEY, bytes.fromhex('cafebabedeadbeef'))
+```
+
+The `add_standard_parameter` method will throw an error if the given value is not of the type
+that the standard parameter expects. When using `add_parameter` to add a parameter with a 
+standard parameter name to a map, a similar type-check is performed. However, if the value 
+does have the type expected by the standard parameter of that name, only a warning is shown.
+It is still recommended that you change either the name or the value of the parameter in
+such a case.
 
 ### Reading `.trs` files
 ```python
@@ -138,8 +180,13 @@ with trsfile.open('trace-set.trs', 'r') as traces:
 ```python
 import random, os
 from trsfile import trs_open, Trace, SampleCoding, TracePadding, Header
-from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap
-from trsfile.traceparameter import ByteArrayParameter, ParameterType, TraceParameterDefinition
+from trsfile.parametermap import TraceParameterMap, TraceSetParameterMap
+from trsfile.traceparameter import ByteArrayParameter
+from trsfile.standardparameters import StandardTraceSetParameters
+
+parameters = TraceSetParameterMap()
+parameters.add_standard_parameter(StandardTraceSetParameters.X_SCALE, 1e-6)
+parameters.add_standard_parameter(StandardTraceSetParameters.Y_SCALE, 0.1)
 
 with trs_open(
 		'trace-set.trs',                 # File name of the trace set
@@ -148,11 +195,8 @@ with trs_open(
 		engine = 'TrsEngine',            # Optional: how the trace set is stored (defaults to TrsEngine)
 		headers = {                      # Optional: headers (see Header class)
 			Header.TRS_VERSION: 2,
-			Header.SCALE_X: 1e-6,
-			Header.SCALE_Y: 0.1,
 			Header.DESCRIPTION: 'Testing trace creation',
-			Header.TRACE_PARAMETER_DEFINITIONS: TraceParameterDefinitionMap(
-				{'parameter': TraceParameterDefinition(ParameterType.BYTE, 16, 0)})
+            Header.TRACE_SET_PARAMETERS: parameters,
 		},
 		padding_mode = TracePadding.AUTO,# Optional: padding mode (defaults to TracePadding.AUTO)
 		live_update = True               # Optional: updates the TRS file for live preview (small performance hit)
