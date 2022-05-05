@@ -155,10 +155,10 @@ class TraceSet:
 	def get_header(self, header):
 		return self.engine.headers[header]
 
-	def __eq__(self, other):
-		"""Compares two trace sets to each other"""
-		if not isinstance(other, TrsFile):
-			return False
+    def __eq__(self, other):
+        """Compares two trace sets to each other"""
+        if not isinstance(other, TraceSet):
+            return False
 
 		if len(self) != len(other):
 			return False
