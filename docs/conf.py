@@ -14,6 +14,9 @@
 #
 import os
 import sys
+from datetime import date
+from importlib.metadata import metadata
+
 sys.path.insert(0, os.path.abspath('../'))
 
 import trsfile
@@ -22,8 +25,10 @@ import trsfile
 # -- Project information -----------------------------------------------------
 
 project = 'trsfile'
-copyright = trsfile.__author__ + ', Riscure'
-author = trsfile.__author__
+
+author = metadata(project)["Maintainer"]
+copyright = f"{date.today().year}, {author}"
+
 
 # The short X.Y version
 version = '.'.join(trsfile.__version__.split('.')[0:2])
@@ -45,7 +50,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
-    'm2r',
+    'm2r2',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -142,7 +147,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'trsfile.tex', 'trsfile Documentation',
-     trsfile.__author__, 'manual'),
+     author, 'manual'),
 ]
 
 
