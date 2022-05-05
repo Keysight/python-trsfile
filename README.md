@@ -197,11 +197,16 @@ with \
 ## Documentation
 The full documentation is available in the `docs` folder with a readable version on [Read the Docs](https://trsfile.readthedocs.io/).
 
-## Testing
+## Contributing
+
+### Testing
 The library supports Python `unittest` module and the tests can be executed with the following command:
 ```
 python -m unittest
 ```
+
+### Creating Releases
+We use Github Actions to publish packages to PYPy. Read the [Github docs on how to create a new release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) and trigger the publishing workflow:
 
 ## License
 [BSD 3-Clause Clear License](https://choosealicense.com/licenses/bsd-3-clause-clear/)
