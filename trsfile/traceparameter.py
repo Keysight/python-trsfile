@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import struct
 from abc import ABC, abstractmethod
 from enum import Enum
 from io import BytesIO
 from typing import Any
+
+from numpy import ndarray, integer, bool8, uint8, double, single
 
 from trsfile.utils import encode_as_short, read_short
 
@@ -37,7 +40,8 @@ class TraceParameter(ABC):
         if type(value) is not str and (value is None or len(value) <= 0):
             raise ValueError('The value for a TraceParameter cannot be empty')
         if not type(self)._has_expected_type(value):
-            raise TypeError(f'A {type(self).__name__} must have a value of {type(self)._expected_type_string} type')
+            raise TypeError(f'A {type(self).__name__} must have a value of type "{type(self)._expected_type_string}"'
+                            f', but it has a type of {type(value)}')
         self.value = value
 
     def __len__(self):
@@ -59,7 +63,7 @@ class TraceSetParameter:
 
 
 class BooleanArrayParameter(TraceParameter):
-    _expected_type_string = "List[bool] type"
+    _expected_type_string = "List[bool] or ndarray[bool8]"
 
     def __len__(self):
         return len(bytes(self.value))
@@ -77,16 +81,15 @@ class BooleanArrayParameter(TraceParameter):
 
     @staticmethod
     def _has_expected_type(value: Any) -> bool:
-        if type(value) is not list:
-            return False
-        for elem in value:
-            if type(elem) is not bool:
-                return False
-        return True
+        if type(value) is list:
+            return all(isinstance(elem, bool) for elem in value)
+        elif type(value) is ndarray:
+            return all(isinstance(elem, bool8) for elem in value)
+        return False
 
 
 class ByteArrayParameter(TraceParameter):
-    _expected_type_string = f"bytearray, bytes, or List[int] type, where the int values are in range({BYTE_MIN}, {BYTE_MAX + 1})"
+    _expected_type_string = f"bytearray, bytes, List[int], or ndarray[integer], where the int values are in range({BYTE_MIN}, {BYTE_MAX + 1})"
 
     def __len__(self):
         return len(bytes(self.value))
@@ -111,19 +114,18 @@ class ByteArrayParameter(TraceParameter):
     def _has_expected_type(value: Any) -> bool:
         if type(value) is bytes or type(value) is bytearray:
             return True
-        if type(value) is not list:
-            return False
-        for elem in value:
-            if type(elem) is not int or elem < BYTE_MIN or elem > BYTE_MAX:
-                return False
-        return True
+        if type(value) is list:
+            return all(isinstance(elem, int) and BYTE_MIN <= elem <= BYTE_MAX for elem in value)
+        elif type(value) is ndarray:
+            return all(isinstance(elem, uint8) for elem in value)
+        return False
 
 
 class DoubleArrayParameter(TraceParameter):
-    _expected_type_string = "List[float] type"
+    _expected_type_string = "List[float/int] or ndarray[double/integer]"
 
     @staticmethod
-    def deserialize(io_bytes: BytesIO, param_length: int)-> DoubleArrayParameter:
+    def deserialize(io_bytes: BytesIO, param_length: int) -> DoubleArrayParameter:
         param_value = [struct.unpack('<d', io_bytes.read(ParameterType.DOUBLE.byte_size))[0] for i in range(param_length)]
         return DoubleArrayParameter(param_value)
 
@@ -134,24 +136,23 @@ class DoubleArrayParameter(TraceParameter):
         return bytes(out)
 
     @staticmethod
-    def _has_expected_type(value: Any)-> bool:
-        if type(value) is not list:
-            return False
-        for elem in value:
-            if type(elem) is not float and type(elem) is not int:
-                return False
-        return True
+    def _has_expected_type(value: Any) -> bool:
+        if type(value) is list:
+            return all(isinstance(elem, (float, int)) for elem in value)
+        elif type(value) is ndarray:
+            return all(isinstance(elem, (double, integer)) for elem in value)
+        return False
 
 
 class FloatArrayParameter(TraceParameter):
-    _expected_type_string = "List[float] type"
+    _expected_type_string = "List[float/int] or ndarray[single/integer]"
 
     @staticmethod
-    def deserialize(io_bytes: BytesIO, param_length: int)-> FloatArrayParameter:
+    def deserialize(io_bytes: BytesIO, param_length: int) -> FloatArrayParameter:
         param_value = [struct.unpack('<f', io_bytes.read(ParameterType.FLOAT.byte_size))[0] for i in range(param_length)]
         return FloatArrayParameter(param_value)
 
-    def serialize(self)-> bytes:
+    def serialize(self) -> bytes:
         out = bytearray()
         for x in self.value:
             out.extend(struct.pack('<f', x))
@@ -159,19 +160,18 @@ class FloatArrayParameter(TraceParameter):
 
     @staticmethod
     def _has_expected_type(value: Any) -> bool:
-        if type(value) is not list:
-            return False
-        for elem in value:
-            if type(elem) is not float and type(elem) is not int:
-                return False
-        return True
+        if type(value) is list:
+            return all(isinstance(elem, (float, int)) for elem in value)
+        elif type(value) is ndarray:
+            return all(isinstance(elem, (single, integer)) for elem in value)
+        return False
 
 
 class IntegerArrayParameter(TraceParameter):
-    _expected_type_string = f"List[int] type where the int values are in range({INT_MIN}, {INT_MAX + 1})"
+    _expected_type_string = f"List[int] or ndarray[integer], where the int values are in range({INT_MIN}, {INT_MAX + 1})"
 
     @staticmethod
-    def deserialize(io_bytes: BytesIO, param_length: int)-> IntegerArrayParameter:
+    def deserialize(io_bytes: BytesIO, param_length: int) -> IntegerArrayParameter:
         param_value = [struct.unpack('<i', io_bytes.read(ParameterType.INT.byte_size))[0] for i in range(param_length)]
         return IntegerArrayParameter(param_value)
 
@@ -183,16 +183,15 @@ class IntegerArrayParameter(TraceParameter):
 
     @staticmethod
     def _has_expected_type(value: Any) -> bool:
-        if type(value) is not list:
-            return False
-        for elem in value:
-            if type(elem) is not int or elem < INT_MIN or elem > INT_MAX:
-                return False
-        return True
+        if type(value) is list:
+            return all(isinstance(elem, int) and INT_MIN <= elem <= INT_MAX for elem in value)
+        elif type(value) is ndarray:
+            return all(isinstance(elem, integer) and INT_MIN <= elem <= INT_MAX for elem in value)
+        return False
 
 
 class LongArrayParameter(TraceParameter):
-    _expected_type_string = "List[int] type"
+    _expected_type_string = "List[int] or ndarray[integer]"
 
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int) -> LongArrayParameter:
@@ -207,16 +206,15 @@ class LongArrayParameter(TraceParameter):
 
     @staticmethod
     def _has_expected_type(value: Any) -> bool:
-        if type(value) is not list:
-            return False
-        for elem in value:
-            if type(elem) is not int:
-                return False
-        return True
+        if type(value) is list:
+            return all(isinstance(elem, int) for elem in value)
+        elif type(value) is ndarray:
+            return all(isinstance(elem, integer) for elem in value)
+        return False
 
 
 class ShortArrayParameter(TraceParameter):
-    _expected_type_string = f"List[int] type where the int values are in range({SHORT_MIN}, {SHORT_MAX + 1})"
+    _expected_type_string = f"List[int] or ndarray[integer], where the int values are in range({SHORT_MIN}, {SHORT_MAX + 1})"
 
     @staticmethod
     def deserialize(io_bytes: BytesIO, param_length: int) -> ShortArrayParameter:
@@ -231,16 +229,15 @@ class ShortArrayParameter(TraceParameter):
 
     @staticmethod
     def _has_expected_type(value: Any) -> bool:
-        if type(value) is not list:
-            return False
-        for elem in value:
-            if type(elem) is not int or elem < SHORT_MIN or elem > SHORT_MAX:
-                return False
-        return True
+        if type(value) is list:
+            return all(isinstance(elem, int) and SHORT_MIN <= elem <= SHORT_MAX for elem in value)
+        elif type(value) is ndarray:
+            return all(isinstance(elem, integer) and SHORT_MIN <= elem <= SHORT_MAX for elem in value)
+        return False
 
 
 class StringParameter(TraceParameter):
-    _expected_type_string = "str type"
+    _expected_type_string = "str"
 
     def __len__(self):
         return len(self.value.encode(UTF_8))
