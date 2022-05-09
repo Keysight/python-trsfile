@@ -16,33 +16,16 @@ def to_trs(path_to_project: str, output_path: str, trace_index: int = 0):
     project.load(path_to_project)
     container = project.trace_manager().get_segment(trace_index)
     traceset_parameters = TraceSetParameterMap()
-    trace_parameter_definitions = TraceParameterDefinitionMap()
     headers = {
-        Header.TRS_VERSION: 2,
         Header.DESCRIPTION: read_or_default(container.config, 'notes'),
         Header.ACQUISITION_DEVICE_ID: read_or_default(container.config, 'scopeName'),
         Header.SCALE_X: 1 / float(read_or_default(container.config, 'scopeSampleRate', 1)),
-        Header.TRACE_SET_PARAMETERS: traceset_parameters,
-        Header.TRACE_PARAMETER_DEFINITIONS: trace_parameter_definitions
+        Header.TRACE_SET_PARAMETERS: traceset_parameters
     }
     container.loadAllTraces()
     contains_textin = container.textins is not None and len(container.textins) > 0 and container.textins[0] is not None
     contains_keylist = container.keylist is not None and len(container.keylist) > 0 and container.keylist[0] is not None
     contains_textout = container.textouts is not None and len(container.textouts) > 0 and container.textouts[0] is not None
-
-    definition_offset = 0
-    if contains_textin:
-        size = len(container.textins[0])
-        trace_parameter_definitions['INPUT'] = TraceParameterDefinition(ParameterType.BYTE, size, definition_offset)
-        definition_offset += size
-    if contains_textout:
-        size = len(container.textouts[0])
-        trace_parameter_definitions['OUTPUT'] = TraceParameterDefinition(ParameterType.BYTE, size, definition_offset)
-        definition_offset += size
-    if contains_keylist:
-        size = len(container.keylist[0])
-        trace_parameter_definitions['KEY'] = TraceParameterDefinition(ParameterType.BYTE, size, definition_offset)
-        definition_offset += size
 
     traceset_parameters['TARGET_SW'] = StringParameter(read_or_default(container.config, 'targetSW'))
     traceset_parameters['TARGET_HW'] = StringParameter(read_or_default(container.config, 'targetHW'))
