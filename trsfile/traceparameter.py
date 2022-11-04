@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import struct
+import warnings
 from abc import ABC, abstractmethod
 from enum import Enum
 from io import BytesIO
@@ -37,7 +38,11 @@ class TraceParameter(ABC):
         pass
 
     def __init__(self, value):
-        if type(value) is not str and (value is None or len(value) <= 0):
+        if type(value) is ndarray and len(value.shape) > 1:
+            warnings.warn("Flatting multi-dimensional ndarray before adding it to trace parameter.\n"
+                          "Information about dimensions of this ndarray will be lost.")
+            value = value.flatten()
+        if value is None or ((type(value) is list or type(value) is ndarray) and len(value) <= 0):
             raise ValueError('The value for a TraceParameter cannot be empty')
         if not type(self)._has_expected_type(value):
             raise TypeError(f'A {type(self).__name__} must have a value of type "{type(self)._expected_type_string}"'
@@ -48,7 +53,13 @@ class TraceParameter(ABC):
         return len(self.value)
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and self.value == other.value
+        if not isinstance(other, type(self)):
+            return False
+        if (type(self.value) == list or type(self.value) == ndarray) and \
+                (type(other.value) == list or type(other.value) == ndarray):
+            return all(this_val == that_val for (this_val, that_val) in zip(self.value, other.value))
+        else:
+            return self.value == other.value
 
     def __str__(self):
         return str(self.value)
