@@ -4,6 +4,7 @@ import numbers
 import warnings
 from typing import Any, Union, List, Dict
 
+from trsfile.compatibility import alias, aliased
 from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
 from trsfile.traceparameter import TraceSetParameter, TraceParameter, TraceParameterDefinition, ParameterType, \
     BooleanArrayParameter, ByteArrayParameter, StringParameter, DoubleArrayParameter, IntegerArrayParameter, \
@@ -15,6 +16,7 @@ SHORT_MIN = -2**15
 SHORT_MAX = 2**15-1
 INT_MIN = -2**31
 INT_MAX = 2**31-1
+
 
 class ParameterMapUtil:
     # A placeholder for integers that are actually shorts
@@ -175,6 +177,7 @@ class LockableDict(StringKeyOrderedDict):
         self._is_locked = True
 
 
+@aliased
 class TraceSetParameterMap(LockableDict):
     default_values = {
         StandardTraceSetParameters.DISPLAY_HINT_X_LABEL: "",
@@ -195,6 +198,7 @@ class TraceSetParameterMap(LockableDict):
         self._stop_if_locked()
         super().__setitem__(key, value)
 
+    @alias("add")
     def add_parameter(self, name: str, value: ParameterMapUtil.ParameterValueType) -> None:
         """Add a trace set parameter with a given name and value.
         If the name matches the identifier of a standard trace set parameter,
@@ -208,7 +212,7 @@ class TraceSetParameterMap(LockableDict):
         try:
             std_param = StandardTraceSetParameters.from_identifier(name)
             typed_param = std_param.parameter_type.param_class
-            self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+            self[std_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
         # if no std_param can be found, a ValueError is raised,
         # if adding the trace parameter to the map fails, a TypeError is raised
         except (ValueError, TypeError) as e:
@@ -326,6 +330,7 @@ class TraceParameterDefinitionMap(LockableDict):
         return result
 
 
+@aliased
 class TraceParameterMap(StringKeyOrderedDict):
     def __setitem__(self, key: str, value: TraceParameter):
         if not isinstance(value, TraceParameter):
@@ -333,6 +338,7 @@ class TraceParameterMap(StringKeyOrderedDict):
                             ' of TraceParameter (e.g. ByteArrayParameter).')
         super().__setitem__(key, value)
 
+    @alias("add")
     def add_parameter(self, name: str, value: ParameterMapUtil.ParameterValueType) -> None:
         """Add a trace parameter with a given name and value
         If the name matches the identifier of a standard trace parameter,
@@ -346,7 +352,7 @@ class TraceParameterMap(StringKeyOrderedDict):
         try:
             std_param = StandardTraceParameters.from_identifier(name)
             typed_param = std_param.parameter_type.param_class
-            self[name] = typed_param(ParameterMapUtil.to_list_if_listable(value))
+            self[std_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
         # if no std_param can be found, a ValueError is raised,
         # if adding the trace parameter to the map fails, a TypeError is raised
         except (TypeError, ValueError) as e:

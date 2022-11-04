@@ -76,9 +76,15 @@ class TestTraceSetParameterMap(TestCase):
         param_map1 = TraceSetParameterMap()
         param_map1.add_standard_parameter(StandardTraceSetParameters.KEY,
                                           bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map1.add_standard_parameter(StandardTraceSetParameters.TVLA_CIPHER, "AES")
         param_map2 = TraceSetParameterMap()
         param_map2.add_parameter('KEY', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map2.add_parameter('TVLA:CIPHER', "AES")
+        param_map3 = TraceSetParameterMap()
+        param_map3.add('key', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map3.add('tvla_cipher', "AES")
         self.assertDictEqual(param_map1, param_map2)
+        self.assertDictEqual(param_map1, param_map3)
 
         # Verify that standard trace set parameters enforce a specific type
         with self.assertRaises(TypeError):
@@ -199,9 +205,15 @@ class TestTraceParameterMap(TestCase):
         param_map1 = TraceParameterMap()
         param_map1.add_standard_parameter(StandardTraceParameters.INPUT,
                                           bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map1.add_standard_parameter(StandardTraceParameters.TVLA_SET_INDEX, 1)
         param_map2 = TraceParameterMap()
         param_map2.add_parameter('INPUT', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map2.add_parameter('TVLA:SET_INDEX', 1)
+        param_map3 = TraceParameterMap()
+        param_map3.add("input", bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map3.add("tvla_set_index", 1)
         self.assertDictEqual(param_map1, param_map2)
+        self.assertDictEqual(param_map1, param_map3)
 
         # Verify that standard trace parameters enforce a specific type
         with self.assertRaises(TypeError):
