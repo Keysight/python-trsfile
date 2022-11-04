@@ -110,6 +110,14 @@ class TestTraceParameterDefinitionMap(TestCase):
         return param_map
 
     @staticmethod
+    def create_std_parameterdefinitionmap() -> TraceParameterDefinitionMap:
+        param_map = TraceParameterDefinitionMap()
+        param_map['INPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
+        param_map['OUTPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 16)
+        param_map['KEY'] = TraceParameterDefinition(ParameterType.BYTE, 16, 32)
+        return param_map
+
+    @staticmethod
     def create_traceparametermap() -> TraceParameterMap:
         param_map = TraceParameterMap()
         param_map['IN'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
@@ -133,6 +141,34 @@ class TestTraceParameterDefinitionMap(TestCase):
         param_map = TestTraceParameterDefinitionMap.create_traceparametermap()
         map_from_trace_params = TraceParameterDefinitionMap.from_trace_parameter_map(param_map)
         self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_trace_params)
+
+    def test_append(self):
+        map_from_append = TraceParameterDefinitionMap()
+        map_from_append.append('IN', ParameterType.BYTE, 16)
+        map_from_append.append('TITLE', ParameterType.STRING, 13)
+        map_from_append.append('中文', ParameterType.STRING, 15)
+        self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_append)
+
+        map_from_std_append = TraceParameterDefinitionMap()
+        map_from_std_append.append_std('INPUT', 16)
+        map_from_std_append.append_std('OUTPUT', 16)
+        map_from_std_append.append_std('KEY', 16)
+        self.assertDictEqual(self.create_std_parameterdefinitionmap(), map_from_std_append)
+
+    def test_insert(self):
+        map_from_insert = TraceParameterDefinitionMap()
+        map_from_insert.insert('TITLE', ParameterType.STRING, 13, 0)
+        with self.assertWarns(UserWarning):
+            map_from_insert.insert('中文', ParameterType.STRING, 15, 10)
+        map_from_insert.insert('IN', ParameterType.BYTE, 16, 0)
+        self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_insert)
+
+        map_from_std_insert = TraceParameterDefinitionMap()
+        map_from_std_insert.insert_std('INPUT', 16, 0)
+        with self.assertWarns(UserWarning):
+            map_from_std_insert.insert_std('KEY', 16, 9)
+        map_from_std_insert.insert_std('OUTPUT', 16, 16)
+        self.assertDictEqual(self.create_std_parameterdefinitionmap(), map_from_std_insert)
 
 
 class TestTraceParameterMap(TestCase):
