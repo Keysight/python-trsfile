@@ -196,6 +196,75 @@ class TestCreation(unittest.TestCase):
         with self.assertRaises(ValueError):
             print(trs_traces)
 
+    def test_write_different_trace_sizes(self):
+        trace_count = 100
+        sample_count = 1000
+
+        with trsfile.open(self.tmp_path, 'w', padding_mode=TracePadding.AUTO) as trs_traces:
+            trs_traces.extend([
+                Trace(
+                    SampleCoding.FLOAT,
+                    [0] * sample_count,
+                    TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
+                )
+                for i in range(0, trace_count)]
+            )
+            with self.assertRaises(TypeError):
+                # The length is incorrect
+                # Should raise a Type error: The parameters of trace #0 do not match the trace set's definitions.
+                trs_traces.extend([
+                    Trace(
+                        SampleCoding.FLOAT,
+                        [0] * sample_count,
+                        TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))})
+                    )]
+                )
+            with self.assertRaises(TypeError):
+                # The name is incorrect
+                # Should raise a Type error: The parameters of trace #1 do not match the trace set's definitions.
+                trs_traces.extend([
+                    Trace(
+                        SampleCoding.FLOAT,
+                        [0] * sample_count,
+                        TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(bytes.fromhex('0102030405060708'))})
+                    ),
+                    Trace(
+                        SampleCoding.FLOAT,
+                        [0] * sample_count,
+                        TraceParameterMap({'NEW_DATA': ByteArrayParameter(bytes.fromhex('0102030405060708'))})
+                    )]
+                )
+            with self.assertRaises(TypeError):
+                # The type is incorrect
+                # Should raise a Type error: The parameters of trace #0 do not match the trace set's definitions.
+                trs_traces.extend([
+                    Trace(
+                        SampleCoding.FLOAT,
+                        [0] * sample_count,
+                        TraceParameterMap({'LEGACY_DATA': IntegerArrayParameter([42, 74])})
+                    )]
+                )
+
+        with trsfile.open(self.tmp_path, 'w', padding_mode=TracePadding.AUTO) as trs_traces:
+            trs_traces.extend([
+                Trace(
+                    SampleCoding.FLOAT,
+                    [0] * sample_count,
+                    TraceParameterMap()
+                )
+                for i in range(0, trace_count)]
+            )
+            with self.assertRaises(TypeError):
+                # The length, data and name are incorrect
+                # Should raise a Type error: The parameters of trace #0 do not match the trace set's definitions.
+                trs_traces.extend([
+                    Trace(
+                        SampleCoding.FLOAT,
+                        [0] * sample_count,
+                        TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))})
+                    )]
+                )
+
     def test_read(self):
         trace_count = 100
         sample_count = 1000

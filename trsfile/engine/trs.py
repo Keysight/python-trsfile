@@ -177,13 +177,17 @@ class TrsEngine(Engine):
 
             # Add a TraceParameterDefinitionMap if none is present, and verify its validity if one is present
             if Header.TRACE_PARAMETER_DEFINITIONS not in self.headers:
-                if data_length > 0:
-                    headers_updates[Header.TRACE_PARAMETER_DEFINITIONS] = \
-                        TraceParameterDefinitionMap.from_trace_parameter_map(traces[0].parameters)
-            elif not traces[0].parameters.matches(self.headers[Header.TRACE_PARAMETER_DEFINITIONS]):
-                raise TypeError("The traces' parameters do not match the trace set's definitions")
+                headers_updates[Header.TRACE_PARAMETER_DEFINITIONS] = \
+                    TraceParameterDefinitionMap.from_trace_parameter_map(traces[0].parameters)
 
             headers_updates[Header.LENGTH_DATA] = data_length
+
+        # Verify that each trace confirms to the traceset's TraceParameterDefinitionMap
+        for index, trace in enumerate(traces):
+            if not trace.parameters.matches(self.headers[Header.TRACE_PARAMETER_DEFINITIONS]):
+                raise TypeError(f"The parameters of trace #{index} do not match the trace set's definitions.\n"
+                                f"Please make sure the trace parameters match those of the other traces in type, "
+                                f"size and name.")
 
         if self.headers[Header.SAMPLE_CODING] is None:
             if len(set([trace.sample_coding for trace in traces])) > 1:
