@@ -7,7 +7,7 @@ import math
 import shutil
 
 from trsfile import Trace, SampleCoding, Header, TracePadding
-from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap, TraceSetParameterMap
+from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap, TraceSetParameterMap, RawTraceData
 from trsfile.standardparameters import StandardTraceSetParameters
 from trsfile.traceparameter import ByteArrayParameter, TraceParameterDefinition, ParameterType, StringParameter, \
     IntegerArrayParameter, BooleanArrayParameter, FloatArrayParameter
@@ -178,6 +178,20 @@ class TestCreation(unittest.TestCase):
         except Exception as e:
             self.fail('Exception occurred: ' + str(e))
 
+    def test_write_different_trace_sizes(self):
+        trace_count = 100
+        sample_count = 1000
+
+        with trsfile.open(self.tmp_path, 'w', padding_mode=TracePadding.AUTO) as trs_traces:
+            trs_traces.extend([
+                Trace(
+                    SampleCoding.FLOAT,
+                    [0] * sample_count,
+                    RawTraceData(i.to_bytes(8, byteorder='big'))
+                )
+                for i in range(0, trace_count)]
+            )
+
     def test_write_closed(self):
         trace_count = 100
         sample_count = 1000
@@ -339,7 +353,7 @@ class TestCreation(unittest.TestCase):
                     Trace(
                         SampleCoding.FLOAT,
                         [0] * sample_count,
-                        TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(i.to_bytes(8, byteorder='big'))})
+                        raw_data=i.to_bytes(8, byteorder='big')
                     )
                     for i in range(0, trace_count)]
                 )

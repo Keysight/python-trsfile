@@ -403,6 +403,12 @@ class TraceParameterDefinitionMap(LockableDict):
         :param trace_parameters: The trace parameter map from which the definitions will be deduced
 
         :return:                 A parameter definition map that described the metadata of the input trace parameter map"""
+        if isinstance(trace_parameters, RawTraceData):
+            warnings.warn("Creating a trace parameter definition map from raw trace data.\nThis is not recommended, "
+                          "as it will not add any meta information about the trace data.\nEither manually define a "
+                          "TraceParameterDefinitionMap for the traceset or make sure the first trace you add to the "
+                          "traceset has a proper TraceParameterMap")
+
         offset = 0
         result = TraceParameterDefinitionMap()
         for key, trace_param in trace_parameters.items():
@@ -503,3 +509,21 @@ class TraceParameterMap(StringKeyOrderedDict):
                 break
         match &= matched_keys == list(definitions.keys())
         return match
+
+
+class RawTraceData(TraceParameterMap):
+    def __init__(self, data: bytes):
+        super().__init__()
+        super().__setitem__("LEGACY_DATA", ByteArrayParameter(data))
+
+    def __setitem__(self, key: str, value: TraceParameter):
+        raise KeyError("Adding Trace Parameters into raw trace data is not allowed")
+
+    def matches(self, definitions: TraceParameterDefinitionMap) -> bool:
+        """Test whether this RawTraceData could be interpreted by given definitions
+
+        :param definitions: The trace parameter definition map of the trs file to which the trace with this trace
+                            raw trace data will be added
+
+        :return:            A boolean that is true if the trace parameter definitions can interpret this raw trace data"""
+        return definitions.get_total_size() == len(self["LEGACY_DATA"])

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap, RawTraceData
 from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
 from trsfile.traceparameter import *
 
@@ -258,3 +258,29 @@ class TestTraceParameterMap(TestCase):
         # However, this type check only produces a warning
         with self.assertWarns(UserWarning):
             param_map1.add_parameter('INPUT', 'cafebabedeadbeef0102030405060708')
+
+    def test_raw_trace_data(self):
+        raw_data = RawTraceData(bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        assert raw_data.serialize() == bytes.fromhex('cafebabedeadbeef0102030405060708')
+
+        # Verify that nothing can be added into a raw data TraceParameterMap
+        with self.assertRaises(KeyError):
+            raw_data['INPUT'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        with self.assertRaises(KeyError):
+            raw_data.add('input', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+
+        # Verify that raw data can match any traceparameterdefinition map, as long as the length is correct
+        traceParamDefs = TraceParameterDefinitionMap()
+        traceParamDefs.append("INPUT", ParameterType.BYTE, 16)
+        assert raw_data.matches(traceParamDefs)
+
+        traceParamDefs = TraceParameterDefinitionMap()
+        traceParamDefs.append("INPUT", ParameterType.BYTE, 8)
+        traceParamDefs.append("OUTPUT", ParameterType.BYTE, 8)
+        assert raw_data.matches(traceParamDefs)
+        traceParamDefs.append("KEY", ParameterType.BYTE, 8)
+        assert not raw_data.matches(traceParamDefs)
+
+        with self.assertWarns(UserWarning):
+            TraceParameterDefinitionMap.from_trace_parameter_map(raw_data)
+
