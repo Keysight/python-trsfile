@@ -67,10 +67,10 @@ in it. A value with the bytes or bytearray type will be stored asa ByteArrayPara
 an array of integers will be stored as either a ShortArrayParameter, an IntegerArrayParameter 
 or a LongArrayParameter based on their maximum and minimum value. Any list of numeric values
 that includes at least one float value will be stored as a DoubleArrayParameter, because 
-python does not distinguish between float and double. The add_parameter method also handles  
-the conversion of a singular numeric or boolean value into an array with a single entry. The 
-following code creates a TraceSetParameterMap very similar to the code above using the
-add_parameter method:
+python does not distinguish between float and double. The add_parameter (aliased as 'add') 
+method also handles the conversion of a singular numeric or boolean value into an array with
+a single entry. The following code creates a TraceSetParameterMap very similar to the code 
+above using the add_parameter method:
 
 ```python
 from trsfile.parametermap import TraceSetParameterMap
@@ -79,10 +79,10 @@ parameters = TraceSetParameterMap()
 parameters.add_parameter('BYTES', bytearray([0, 1, 255]))
 parameters.add_parameter('SHORTS', [1, 1337, -32768, 32767]) 
 parameters.add_parameter('INTS', [42, int(1e6)]) 
-parameters.add_parameter('DOUBLES1', [0.1, 0.2, 0.3]) 
-parameters.add_parameter('LONGS', 0x7fffffffffffffff)
-parameters.add_parameter('DOUBLES2', [3.1415926535, 2.718281828])
-parameters.add_parameter('STRINGS', 'Lorem ipsum dolor')
+parameters.add('DOUBLES1', [0.1, 0.2, 0.3]) 
+parameters.add('LONGS', 0x7fffffffffffffff)
+parameters.add('DOUBLES2', [3.1415926535, 2.718281828])
+parameters.add('STRINGS', 'Lorem ipsum dolor')
 ```
 The only difference is that add_parameter adds a DoubleArrayParameter instead of a 
 FloatArrayParameter, as explained above.
@@ -119,15 +119,41 @@ from trsfile.parametermap import TraceParameterMap
 parameters = TraceParameterMap()
 parameters.add_parameter("BYTE", bytearray([1, 2, 4, 8]))
 parameters.add_parameter("SHORT", 42)
-parameters.add_parameter("DOUBLE", [3.14, 1.618])
-parameters.add_parameter("STRING", "A string")
+parameters.add("DOUBLE", [3.14, 1.618])
+parameters.add("STRING", "A string")
 Trace(SampleCoding.FLOAT, list(range(100)), parameters, "trace title")
 ```
 
 Note that the previously mentioned `TraceParameterDefinitionMap` is automatically added to 
-the headers when a first Trace is added to a TraceSet. Adding this map to the headers
-manually is not recommended, because it may lead to the TraceParameterDefinitionMap not 
-accurately describing the TraceParameterMaps added to each trace.
+the headers when a first Trace is added to a TraceSet. It is also possible to define a 
+TraceParameterDefinitionMap and add it to the headers yourself. If you do this, you can 
+create Traces with raw trace data instead of a TraceParameterMap. That array of bytes will 
+be interpreted as a trace parameter map using your definitions. For that reason, the 
+bytearray should have the length that the definition map expects. For example:
+
+```python
+from trsfile import Trace, SampleCoding, Header
+from trsfile.traceparameter import ParameterType
+from trsfile.parametermap import TraceParameterDefinitionMap
+
+headers = {}
+
+parameter_definitions = TraceParameterDefinitionMap()
+parameter_definitions.append('INPUT', ParameterType.BYTE, 8) # Add 8 bytes of byte input data to the definitions
+parameter_definitions.append('OUTPUT', ParameterType.BYTE, 8) # Add 8 bytes of byte output data after the input data
+headers[Header.TRACE_PARAMETER_DEFINITIONS] = parameter_definitions
+
+...
+
+input_output_data = bytes.fromhex('cafebabedeadbeef0102030405060708')
+Trace(SampleCoding.FLOAT, list(range(100)), title="trace title", raw_data=input_output_data)
+
+```
+The trace created in the above example has an 'INPUT' trace parameter with value 
+0xcafebabedeadbeef, and an 'OUTPUT' trace parameter with value 0x0102030405060708. It is 
+not recommended to create traces with raw data as input unless you define a trace parameter
+definition map, or unless the first trace you add to a trs file does contain a trace 
+parameter map (in which case the trace parameter definition map is created implicitly). 
 
 See below for a more elaborate example on creating trace sets with parameters.
 
