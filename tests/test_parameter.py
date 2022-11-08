@@ -76,7 +76,7 @@ class TestParameter(TestCase):
         self.assertEqual(param1, param2)
         with self.assertWarns(UserWarning):
             param1 = DoubleArrayParameter(ndarray(shape=[1, 3], dtype=int32,
-                                                  buffer=array([-1, 2, 1000000])))
+                                                  buffer=array([int32(val) for val in [-1, 2, 1000000]])))
         self.assertEqual(param1, param2)
 
         with self.assertWarns(UserWarning):
@@ -119,7 +119,7 @@ class TestParameter(TestCase):
 
         with self.assertWarns(UserWarning):
             param1 = FloatArrayParameter(ndarray(shape=[1, 3], dtype=int32,
-                                                 buffer=array([-1, 2, 1000000])))
+                                                 buffer=array([int32(val) for val in [-1, 2, 1000000]])))
         self.assertEqual(param1, param2)
 
         with self.assertWarns(UserWarning):
@@ -148,7 +148,7 @@ class TestParameter(TestCase):
 
         with self.assertWarns(UserWarning):
             param2 = IntegerArrayParameter(ndarray(shape=[2, 2], dtype=int32,
-                                                   buffer=array([-1, 1, 0x7fffffff, -0x80000000])))
+                                                   buffer=array([int32(val) for val in [-1, 1, 0x7fffffff, -0x80000000]])))
         self.assertEqual(param1, param2)
 
         # a short array parameter is not the same as an int array parameter
@@ -165,7 +165,7 @@ class TestParameter(TestCase):
             IntegerArrayParameter([1, 256, 1.0])
         with self.assertRaises(TypeError):
             IntegerArrayParameter(ndarray(shape=[4], dtype=int64,
-                                          buffer=array([-1, 1, 0x7fffffffffffffff, -0x8000000000000000])))
+                                          buffer=array([int64(val) for val in [-1, 1, 0x7fffffffffffffff, -0x8000000000000000]])))
         with self.assertRaises(ValueError):
             IntegerArrayParameter(ndarray(shape=[0], dtype=int32, buffer=array([])))
         with self.assertRaises(TypeError):
@@ -186,7 +186,7 @@ class TestParameter(TestCase):
 
         with self.assertWarns(UserWarning):
             param2 = LongArrayParameter(ndarray(shape=[2, 2], dtype=int64,
-                                                buffer=array([-1, 1, 0x7fffffffffffffff, -0x8000000000000000])))
+                                                buffer=array([int64(val) for val in [-1, 1, 0x7fffffffffffffff, -0x8000000000000000]])))
         self.assertEqual(param1, param2)
 
         # an int array parameter is not the same as a long array parameter
@@ -197,7 +197,7 @@ class TestParameter(TestCase):
         # verify that a long array parameter based on a ndarray filled with int32s works
         with self.assertWarns(UserWarning):
             param1 = LongArrayParameter(ndarray(shape=[1, 4], dtype=int32,
-                                                buffer=array([-1, 1, 0x7fffffff, -0x80000000])))
+                                                buffer=array([int32(val) for val in [-1, 1, 0x7fffffff, -0x80000000]])))
         self.assertEqual(param1, param2)
 
         with self.assertRaises(TypeError):
@@ -222,7 +222,8 @@ class TestParameter(TestCase):
         with self.assertRaises(TypeError):
             ShortArrayParameter([1, 256, 1.0])
         with self.assertRaises(TypeError):
-            ShortArrayParameter(ndarray(shape=[4], dtype=int32, buffer=array([-1, 1, 0x7fffffff, -0x80000000])))
+            ShortArrayParameter(ndarray(shape=[4], dtype=int32,
+                                        buffer=array([int32(val) for val in [-1, 1, 0x7fffffff, -0x80000000]])))
         with self.assertRaises(ValueError):
             ShortArrayParameter(ndarray(shape=[0], dtype=int16, buffer=array([])))
         with self.assertRaises(TypeError):
