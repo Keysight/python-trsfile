@@ -90,6 +90,10 @@ class TestHeader(unittest.TestCase):
             trace_parameter_definitions.popitem()
         with self.assertRaises(TypeError):
             trace_parameter_definitions.clear()
+        with self.assertRaises(TypeError):
+            trace_parameter_definitions.append('input', ParameterType.BYTE, 16)
+        with self.assertRaises(TypeError):
+            trace_parameter_definitions.insert('output', ParameterType.BYTE, 16, 0)
 
         # Shallow copies still share references to the same trace set parameters as the original,
         # and should therefore not be modifiable if the original isn't

@@ -1,7 +1,8 @@
 import numpy
 
-from trsfile.parametermap import TraceParameterMap
+from trsfile.parametermap import TraceParameterMap, RawTraceData
 from trsfile.common import Header, SampleCoding
+
 
 class Trace:
 	"""The :py:obj:`Trace` class behaves like a :py:obj:`list`
@@ -12,11 +13,35 @@ class Trace:
 	provided :py:obj:`sample_coding`.
 	"""
 
-	def __init__(self, sample_coding, samples, parameters=TraceParameterMap(), title='trace', headers={}):
+	def __init__(self, sample_coding, samples, parameters=None, title='trace', headers=None, raw_data: bytes = bytes()):
+		""" Create a new Trace.
+		:param sample_coding: The encoding of all samples in the trace
+		:param samples: The array of samples of the trace
+		:param parameters: The trace parameter map that contains the trace's data and its meta information. Do not use
+			in combination with raw_data
+		:param title: The title of the trace
+		:param headers: The headers of the trs file to which this trace will be added. This is an optional parameter;
+			information from the headers may define the locations of the input, output and key data in the trace data,
+			but it is recommended to store that information in the trace parameter map now.
+		:param raw_data: A byte array with the raw trace data. Do not use in combination with parameters. If used, it is
+			recommended that a TraceParameterDefinitionMap is added to the headers of the trsfile that defines the meta
+			information of this raw trace data.
+		"""
+		if parameters is None:
+			if len(raw_data) > 0:
+				parameters = RawTraceData(raw_data)
+			else:
+				parameters = TraceParameterMap()
+		else:
+			if len(raw_data) > 0:
+				raise Warning("Parameter map and raw data were both defined, but cannot both be used at the same time.\n"
+							  "Only the parameter map will be used, raw data will be discarded.")
+		if headers is None:
+			headers = {}
 		self.title = title
 		self.parameters = parameters
-		if not type(self.parameters) is TraceParameterMap:
-			raise TypeError('Trace parameter data must be supplied as a TraceParameterMap')
+		if not isinstance(self.parameters, TraceParameterMap):
+			raise TypeError('Trace data must be supplied as a TraceParameterMap')
 
 		# Obtain sample coding
 		if not isinstance(sample_coding, SampleCoding):

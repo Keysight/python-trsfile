@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap, RawTraceData
 from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
 from trsfile.traceparameter import *
 
@@ -76,9 +76,15 @@ class TestTraceSetParameterMap(TestCase):
         param_map1 = TraceSetParameterMap()
         param_map1.add_standard_parameter(StandardTraceSetParameters.KEY,
                                           bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map1.add_standard_parameter(StandardTraceSetParameters.TVLA_CIPHER, "AES")
         param_map2 = TraceSetParameterMap()
         param_map2.add_parameter('KEY', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map2.add_parameter('TVLA:CIPHER', "AES")
+        param_map3 = TraceSetParameterMap()
+        param_map3.add('key', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map3.add('tvla_cipher', "AES")
         self.assertDictEqual(param_map1, param_map2)
+        self.assertDictEqual(param_map1, param_map3)
 
         # Verify that standard trace set parameters enforce a specific type
         with self.assertRaises(TypeError):
@@ -101,6 +107,14 @@ class TestTraceParameterDefinitionMap(TestCase):
         param_map['IN'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
         param_map['TITLE'] = TraceParameterDefinition(ParameterType.STRING, 13, 16)
         param_map['中文'] = TraceParameterDefinition(ParameterType.STRING, 15, 29)
+        return param_map
+
+    @staticmethod
+    def create_std_parameterdefinitionmap() -> TraceParameterDefinitionMap:
+        param_map = TraceParameterDefinitionMap()
+        param_map['INPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 0)
+        param_map['OUTPUT'] = TraceParameterDefinition(ParameterType.BYTE, 16, 16)
+        param_map['KEY'] = TraceParameterDefinition(ParameterType.BYTE, 16, 32)
         return param_map
 
     @staticmethod
@@ -127,6 +141,34 @@ class TestTraceParameterDefinitionMap(TestCase):
         param_map = TestTraceParameterDefinitionMap.create_traceparametermap()
         map_from_trace_params = TraceParameterDefinitionMap.from_trace_parameter_map(param_map)
         self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_trace_params)
+
+    def test_append(self):
+        map_from_append = TraceParameterDefinitionMap()
+        map_from_append.append('IN', ParameterType.BYTE, 16)
+        map_from_append.append('TITLE', ParameterType.STRING, 13)
+        map_from_append.append('中文', ParameterType.STRING, 15)
+        self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_append)
+
+        map_from_std_append = TraceParameterDefinitionMap()
+        map_from_std_append.append_std('INPUT', 16)
+        map_from_std_append.append_std('OUTPUT', 16)
+        map_from_std_append.append_std('KEY', 16)
+        self.assertDictEqual(self.create_std_parameterdefinitionmap(), map_from_std_append)
+
+    def test_insert(self):
+        map_from_insert = TraceParameterDefinitionMap()
+        map_from_insert.insert('TITLE', ParameterType.STRING, 13, 0)
+        with self.assertWarns(UserWarning):
+            map_from_insert.insert('中文', ParameterType.STRING, 15, 10)
+        map_from_insert.insert('IN', ParameterType.BYTE, 16, 0)
+        self.assertDictEqual(self.create_parameterdefinitionmap(), map_from_insert)
+
+        map_from_std_insert = TraceParameterDefinitionMap()
+        map_from_std_insert.insert_std('INPUT', 16, 0)
+        with self.assertWarns(UserWarning):
+            map_from_std_insert.insert_std('KEY', 16, 9)
+        map_from_std_insert.insert_std('OUTPUT', 16, 16)
+        self.assertDictEqual(self.create_std_parameterdefinitionmap(), map_from_std_insert)
 
 
 class TestTraceParameterMap(TestCase):
@@ -199,9 +241,15 @@ class TestTraceParameterMap(TestCase):
         param_map1 = TraceParameterMap()
         param_map1.add_standard_parameter(StandardTraceParameters.INPUT,
                                           bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map1.add_standard_parameter(StandardTraceParameters.TVLA_SET_INDEX, 1)
         param_map2 = TraceParameterMap()
         param_map2.add_parameter('INPUT', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map2.add_parameter('TVLA:SET_INDEX', 1)
+        param_map3 = TraceParameterMap()
+        param_map3.add("input", bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        param_map3.add("tvla_set_index", 1)
         self.assertDictEqual(param_map1, param_map2)
+        self.assertDictEqual(param_map1, param_map3)
 
         # Verify that standard trace parameters enforce a specific type
         with self.assertRaises(TypeError):
@@ -210,3 +258,29 @@ class TestTraceParameterMap(TestCase):
         # However, this type check only produces a warning
         with self.assertWarns(UserWarning):
             param_map1.add_parameter('INPUT', 'cafebabedeadbeef0102030405060708')
+
+    def test_raw_trace_data(self):
+        raw_data = RawTraceData(bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        assert raw_data.serialize() == bytes.fromhex('cafebabedeadbeef0102030405060708')
+
+        # Verify that nothing can be added into a raw data TraceParameterMap
+        with self.assertRaises(KeyError):
+            raw_data['INPUT'] = ByteArrayParameter(bytes.fromhex('cafebabedeadbeef0102030405060708'))
+        with self.assertRaises(KeyError):
+            raw_data.add('input', bytes.fromhex('cafebabedeadbeef0102030405060708'))
+
+        # Verify that raw data can match any traceparameterdefinition map, as long as the length is correct
+        traceParamDefs = TraceParameterDefinitionMap()
+        traceParamDefs.append("INPUT", ParameterType.BYTE, 16)
+        assert raw_data.matches(traceParamDefs)
+
+        traceParamDefs = TraceParameterDefinitionMap()
+        traceParamDefs.append("INPUT", ParameterType.BYTE, 8)
+        traceParamDefs.append("OUTPUT", ParameterType.BYTE, 8)
+        assert raw_data.matches(traceParamDefs)
+        traceParamDefs.append("KEY", ParameterType.BYTE, 8)
+        assert not raw_data.matches(traceParamDefs)
+
+        with self.assertWarns(UserWarning):
+            TraceParameterDefinitionMap.from_trace_parameter_map(raw_data)
+
