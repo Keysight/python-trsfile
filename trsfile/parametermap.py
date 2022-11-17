@@ -303,13 +303,13 @@ class TraceParameterDefinitionMap(LockableDict):
     def insert_std(self, name: str, size: int, offset: int) -> TraceParameterDefinitionMap:
         """Insert a trace parameter definition of a StandardTraceParameter into this map in a specified location. If
         the given offset would put the new TraceParameter in the middle of a parameter already present in the map, the
-        offset is increased to put add the new parameter after that existing one instead. Any parameters already present
+        offset is increased to put the new parameter after that existing one instead. Any parameters already present
         in the map that have a greater or equal offset than the new parameter, have their offset increased to make space
         for the new parameter.
 
         :param name:   The name of the TraceParameter for which to add a definition. This name must match that of a
                        StandardTraceParameter
-        :param size:   The size of the TraceParameter, in number of values of its type
+        :param size:   The size of the TraceParameter, in number of elements
         :param offset: The offset of the TraceParameter, in bytes
         :return:       This TraceParameterDefinition map after adding the new definition
         """
@@ -317,18 +317,18 @@ class TraceParameterDefinitionMap(LockableDict):
             type = StandardTraceParameters.from_identifier(name).parameter_type
             return self.insert(name, type, size, offset)
         except ValueError:
-            raise ValueError(f"No StandardTraceParameter found with name '{name}'. Either specify a type in this "
-                             f"insert or correct the name to match a standard trace parameter.")
+            raise ValueError(f"No StandardTraceParameter found with name '{name}'. Either use the 'insert' method or "
+                             f"correct the name to match a standard trace parameter.")
 
     def insert(self, name: str, type: ParameterType, size: int, offset: int) -> TraceParameterDefinitionMap:
         """Insert a trace parameter definition into this map in a specified location. If the given offset would put the
-        new TraceParameter in the middle of a parameter already present in the map, the offset is increased to put add
-        the new parameter after that existing one instead. Any parameters already present in the map that have a greater
+        new TraceParameter in the middle of a parameter already present in the map, the offset is increased to put the
+        new parameter after that existing one instead. Any parameters already present in the map that have a greater
         or equal offset than the new parameter, have their offset increased to make space for the new parameter.
 
         :param name:   The name of the TraceParameter for which to add a definition
         :param type:   The type of the TraceParameter for which to add a definition
-        :param size:   The size of the TraceParameter, in number of values of its type
+        :param size:   The size of the TraceParameter, in number of elements
         :param offset: The offset of the TraceParameter, in bytes
         :return:       This TraceParameterDefinition map after adding the new definition
         """
@@ -355,14 +355,14 @@ class TraceParameterDefinitionMap(LockableDict):
 
        :param name: The name of the TraceParameter for which to add a definition. This name must match that of a
                     StandardTraceParameter
-       :param size: The size of the TraceParameter, in number of values of its type
+       :param size: The size of the TraceParameter, in number of elements
        :return:     This TraceParameterDefinition map after adding the new definition"""
         try:
             type = StandardTraceParameters.from_identifier(name).parameter_type
             return self.append(name, type, size)
         except ValueError:
-            raise ValueError(f"No StandardTraceParameter found with name '{name}'. Either specify a type in this "
-                             f"append or correct the name to match a standard trace parameter.")
+            raise ValueError(f"No StandardTraceParameter found with name '{name}'. Either use the 'append' method or "
+                             f"correct the name to match a standard trace parameter.")
 
     def append(self, name: str, type: ParameterType, size: int) -> TraceParameterDefinitionMap:
         """Append a trace parameter definition to this map. The parameter wil be added after all parameter definitions
@@ -370,7 +370,7 @@ class TraceParameterDefinitionMap(LockableDict):
 
         :param name: The name of the TraceParameter for which to add a definition
         :param type: The type of the TraceParameter for which to add a definition
-        :param size: The size of the TraceParameter, in number of values of its type
+        :param size: The size of the TraceParameter, in number of elements
         :return:     This TraceParameterDefinition map after adding the new definition"""
         new_definition = TraceParameterDefinition(type, size, self.get_total_size())
         self.__setitem__(name, new_definition)
@@ -522,8 +522,7 @@ class RawTraceData(TraceParameterMap):
     def matches(self, definitions: TraceParameterDefinitionMap) -> bool:
         """Test whether this RawTraceData could be interpreted by given definitions
 
-        :param definitions: The trace parameter definition map of the trs file to which the trace with this trace
-                            raw trace data will be added
+        :param definitions: The trace parameter definition map to check this raw trace data against
 
         :return:            A boolean that is true if the trace parameter definitions can interpret this raw trace data"""
         return definitions.get_total_size() == len(self["LEGACY_DATA"])

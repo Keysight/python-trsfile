@@ -55,11 +55,12 @@ class TraceParameter(ABC):
     def __eq__(self, other):
         if not isinstance(other, type(self)):
             return False
-        if (type(self.value) == list or type(self.value) == ndarray) and \
-                (type(other.value) == list or type(other.value) == ndarray):
-            return all(this_val == that_val for (this_val, that_val) in zip(self.value, other.value))
-        else:
-            return self.value == other.value
+
+        if len(self.value) != len(other.value):
+            return False
+        # return true only if both parameter value arrays contain the same elements in the same order,
+        # regardless of whether it is an ndarray or a list
+        return all(this_val == that_val for (this_val, that_val) in zip(self.value, other.value))
 
     def __str__(self):
         return str(self.value)
