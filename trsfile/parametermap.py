@@ -504,7 +504,7 @@ class TraceParameterMap(StringKeyOrderedDict):
                 match = len(value) == definition.length
                 match &= ParameterType.from_class(type(value)) == definition.param_type
                 match &= definition.offset == offset
-                offset += len(value)
+                offset += len(value) * definition.param_type.byte_size
             if not match:
                 break
         match &= matched_keys == list(definitions.keys())
