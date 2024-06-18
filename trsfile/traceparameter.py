@@ -7,7 +7,8 @@ from enum import Enum
 from io import BytesIO
 from typing import Any
 
-from numpy import ndarray, integer, bool8, uint8, double, single
+import numpy
+from numpy import ndarray, integer, uint8, double, single
 
 from trsfile.utils import encode_as_short, read_short
 
@@ -75,7 +76,7 @@ class TraceSetParameter:
 
 
 class BooleanArrayParameter(TraceParameter):
-    _expected_type_string = "List[bool] or ndarray[bool8]"
+    _expected_type_string = "List[bool] or ndarray[bool]"
 
     def __len__(self):
         return len(bytes(self.value))
@@ -96,7 +97,7 @@ class BooleanArrayParameter(TraceParameter):
         if type(value) is list:
             return all(isinstance(elem, bool) for elem in value)
         elif type(value) is ndarray:
-            return all(isinstance(elem, bool8) for elem in value)
+            return all(isinstance(elem, numpy.bool) for elem in value)
         return False
 
 

@@ -1,7 +1,7 @@
 from io import BytesIO
 from unittest import TestCase
 
-from numpy import ndarray, int16, array, int32, int64, single, double, uint8, int8, uint16, bool8
+from numpy import ndarray, int16, array, int32, int64, single, double, uint8, int8, uint16
 
 from trsfile.traceparameter import BooleanArrayParameter, ByteArrayParameter, DoubleArrayParameter, FloatArrayParameter, \
     IntegerArrayParameter, ShortArrayParameter, LongArrayParameter, StringParameter
@@ -13,8 +13,8 @@ class TestParameter(TestCase):
         param1 = BooleanArrayParameter([True, False, True])
         self.assertEqual(serialized_param, param1.serialize())
         self.assertEqual(BooleanArrayParameter.deserialize(BytesIO(serialized_param), 3), param1)
-        param2 = BooleanArrayParameter(ndarray(shape=[3], dtype=bool8,
-                                               buffer=array([bool8(val) for val in [True, False, True]])))
+        param2 = BooleanArrayParameter(ndarray(shape=[3], dtype=bool,
+                                               buffer=array([bool(val) for val in [True, False, True]])))
         self.assertEqual(param1, param2)
 
         with self.assertRaises(TypeError):
