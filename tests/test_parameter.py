@@ -47,10 +47,10 @@ class TestParameter(TestCase):
             ByteArrayParameter([0, '1'])
         with self.assertRaises(TypeError):
             ByteArrayParameter([bytes([0, 1, 2, 3]), bytes([4, 5, 6, 7])])
+        with self.assertRaises(OverflowError):
+            ByteArrayParameter(ndarray(shape=[16], dtype=int8, buffer=array(int_data, dtype=int8)))
         with self.assertRaises(TypeError):
-            ByteArrayParameter(ndarray(shape=[16], dtype=int8, buffer=array([int8(val) for val in int_data])))
-        with self.assertRaises(TypeError):
-            ByteArrayParameter(ndarray(shape=[16], dtype=uint16, buffer=array([uint16(val) for val in int_data])))
+            ByteArrayParameter(ndarray(shape=[16], dtype=uint16, buffer=array(int_data, dtype=uint16)))
         with self.assertRaises(ValueError):
             ByteArrayParameter([])
         with self.assertRaises(ValueError):
