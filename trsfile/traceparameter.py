@@ -7,7 +7,8 @@ from enum import Enum
 from io import BytesIO
 from typing import Any
 
-from numpy import ndarray, integer, bool8, uint8, double, single
+from numpy import ndarray, integer, uint8, double, single
+from numpy import bool as bool8
 
 from trsfile.utils import encode_as_short, read_short
 

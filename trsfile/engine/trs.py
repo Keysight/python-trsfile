@@ -1,5 +1,4 @@
 import os
-import mmap
 import struct
 from typing import List, Union, Dict, Any, Optional
 
@@ -43,13 +42,11 @@ class TrsEngine(Engine):
     def __init__(self, path, mode='x', **options):
         self.path = path if type(path) is str else str(path)
         self.handle = None
-        self.file_handle = None
+        self.handle = None
 
         self.traceblock_offset = None
         self.sample_length = None
         self.trace_length = None
-
-        self.is_mmap_synched = False
 
         # Initialize empty dictionaries
         self.headers = {}
@@ -75,8 +72,7 @@ class TrsEngine(Engine):
             if not os.path.isfile(self.path):
                 raise FileNotFoundError('No TRS file: \'{0:s}\''.format(self.path))
 
-            self.file_handle = open(self.path, 'rb')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_READ)
+            self.handle = open(self.path, 'r+b')
             self.read_only = True
             self.read_headers = True
 
@@ -85,15 +81,7 @@ class TrsEngine(Engine):
             if headers is not None and any(not isinstance(header, Header) for header in headers):
                 raise TypeError('Creation of TRS files requires passing Headers to the constructor.')
 
-            # Sadly, to memory map we need a file with a minimum of length 1
-            self.file_handle = open(self.path, 'wb')
-            self.file_handle.write(b'\x00')
-            self.file_handle.close()
-
-            # Now we can open it properly
-            self.file_handle = open(self.path, 'r+b')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
-
+            self.handle = open(self.path, 'w+b')
             self.read_only = False
             self.read_headers = False
 
@@ -105,13 +93,7 @@ class TrsEngine(Engine):
             if os.path.isfile(self.path):
                 raise FileExistsError('TRS file exists: \'{0:s}\''.format(self.path))
 
-            # Sadly, to memory map we need a file with a minimum of length 1
-            self.file_handle = open(self.path, 'wb')
-            self.file_handle.write(b'\x00')
-            self.file_handle.close()
-
-            self.file_handle = open(self.path, 'r+b')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            self.handle = open(self.path, 'w+b')
             self.read_only = False
             self.read_headers = False
 
@@ -124,12 +106,6 @@ class TrsEngine(Engine):
             else:
                 self.read_headers = False
 
-                # We need to create an empty file
-                # Sadly, to memory map we need a file with a minimum of length 1
-                self.file_handle = open(self.path, 'wb')
-                self.file_handle.write(b'\x00')
-                self.file_handle.close()
-
             if self.read_headers and headers is not None:
                 raise TypeError('Cannot change headers when reading TRS files.')
             elif not self.read_headers and headers is not None and any(
@@ -137,8 +113,10 @@ class TrsEngine(Engine):
                 raise TypeError('Creation of TRS files requires passing instances of Headers to the constructor.')
 
             # NOTE: We are using r+b mode because we are essentially updating the file!
-            self.file_handle = open(self.path, 'r+b')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            if self.read_headers:
+                self.handle = open(self.path, 'r+b')
+            else:
+                self.handle = open(self.path, 'w+b')
             self.read_only = False
 
         else:
@@ -153,7 +131,8 @@ class TrsEngine(Engine):
         return self.handle is None or self.handle.closed
 
     def has_trace_data(self) -> bool:
-        return self.traceblock_offset is not None and self.handle.size() > self.traceblock_offset
+        # print(f"{os.path.getsize(self.path)} xxxx {self.traceblock_offset} xxx {self.traceblock_offset is not None and os.path.getsize(self.path) > self.traceblock_offset}")
+        return self.traceblock_offset is not None and os.path.getsize(self.path) > self.traceblock_offset
 
     def update_headers_with_traces_metadata(self, traces: List[Trace]) -> None:
         # Check if any of the following headers are NOT initialized:
@@ -254,34 +233,33 @@ class TrsEngine(Engine):
                 raise ValueError('Trace has a different length from the expected length and padding mode is NONE')
 
             # Seek to the beginning of the trace (this automatically enables us to overwrite)
-            self.file_handle.seek(self.traceblock_offset + i * self.trace_length)
+            self.handle.seek(self.traceblock_offset + i * self.trace_length)
 
             # Title and title padding
             title = trace.title.strip().encode('utf-8')
             if len(title) > self.headers[Header.TITLE_SPACE]:
                 raise TypeError('Trace title is longer than available title space')
-            self.file_handle.write(title)
+            self.handle.write(title)
             if len(title) < self.headers[Header.TITLE_SPACE]:
-                self.file_handle.write(bytes(self.headers[Header.TITLE_SPACE] - len(title)))
+                self.handle.write(bytes(self.headers[Header.TITLE_SPACE] - len(title)))
 
             # Parameters
-            self.file_handle.write(trace.parameters.serialize())
+            self.handle.write(trace.parameters.serialize())
 
             # Automatic truncate
-            trace.samples[:self.headers[Header.NUMBER_SAMPLES]].tofile(self.file_handle)
+            trace.samples[:self.headers[Header.NUMBER_SAMPLES]].tofile(self.handle)
 
             # Add any required padding
             length = (self.headers[Header.NUMBER_SAMPLES] - len(trace.samples)) * self.headers[
                 Header.SAMPLE_CODING].size
             if length > 0:
-                self.file_handle.write(length * b'\x00')
+                self.handle.write(length * b'\x00')
 
         # Write the new total number of traces
         # If you want to have live update, you can give this flag and have this
         # automatically write to the file
         new_number_traces = max(self.headers[Header.NUMBER_TRACES], max(indexes) + 1)
         if self.headers[Header.NUMBER_TRACES] < new_number_traces:
-            self.is_mmap_synched = False
             self.live_update_count += len(traces)
 
             if self.live_update != 0 and self.live_update_count >= self.live_update:
@@ -290,8 +268,8 @@ class TrsEngine(Engine):
 
                 # Force flush
                 self.handle.flush()
-                self.file_handle.flush()
-                os.fsync(self.file_handle.fileno())
+                self.handle.flush()
+                os.fsync(self.handle.fileno())
             else:
                 self.headers[Header.NUMBER_TRACES] = new_number_traces
 
@@ -310,14 +288,6 @@ class TrsEngine(Engine):
                 raise IndexError('List index out of range')
 
             indexes = range(index, index + 1)
-
-        # We need to resize the mmap if we added something directly on the file handle
-        # We do it here for optimization purposes, if you do not read, no resizing :)
-        if not self.is_mmap_synched and not self.read_only:
-            total_file_size = self.traceblock_offset + (self.length() + 1) * self.trace_length
-            if self.handle.size() < total_file_size:
-                self.handle.resize(total_file_size)
-            self.is_mmap_synched = True
 
         # Now read in all traces
         traces = []
@@ -367,11 +337,10 @@ class TrsEngine(Engine):
             if not self.read_only:
                 self.__write_headers({Header.NUMBER_TRACES: self.headers[Header.NUMBER_TRACES]})
 
-            # Flush the mmap (according to docs this is important) and close
             self.handle.flush()
             self.handle.close()
-        if self.file_handle is not None and not self.file_handle.closed:
-            self.file_handle.close()
+        if self.handle is not None and not self.handle.closed:
+            self.handle.close()
 
     def update_headers(self, headers: Dict[Header, Any]):
         changed_headers = super().update_headers(headers)
@@ -479,7 +448,9 @@ class TrsEngine(Engine):
 
                 # Update the TLV value
                 offset = self.header_locations[header][0]
-                self.handle[offset : offset + len(tag_value)] = tag_value
+                self.handle.seek(offset)
+                self.handle.write(tag_value)
+                self.handle.seek(0, os.SEEK_END)
             else:
                 # Construct the TLV
                 tag = [header.value]
@@ -497,16 +468,12 @@ class TrsEngine(Engine):
                     self.traceblock_offset = None
 
                 # Store this index for future references
-                if self.handle.size() < self.handle.tell() + len(tag):
-                    self.handle.resize(self.handle.tell() + len(tag))
                 self.handle.write(bytes(tag))
                 self.header_locations[header] = (self.handle.tell() - len(tag_value), tag_length)
 
         # Save the TRACE_BLOCK if not already saved
         if Header.TRACE_BLOCK not in self.header_locations:
             # Write the TRACE_BLOCK
-            if self.handle.size() < self.handle.tell() + len(TrsEngine._TRACE_BLOCK_START):
-                self.handle.resize(self.handle.tell() + len(TrsEngine._TRACE_BLOCK_START))
             self.handle.write(TrsEngine._TRACE_BLOCK_START)
 
             # Calculate offset

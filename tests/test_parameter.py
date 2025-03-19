@@ -1,7 +1,8 @@
 from io import BytesIO
 from unittest import TestCase
 
-from numpy import ndarray, int16, array, int32, int64, single, double, uint8, int8, uint16, bool8
+from numpy import ndarray, int16, array, int32, int64, single, double, uint8, int8, uint16
+from numpy import bool as bool8
 
 from trsfile.traceparameter import BooleanArrayParameter, ByteArrayParameter, DoubleArrayParameter, FloatArrayParameter, \
     IntegerArrayParameter, ShortArrayParameter, LongArrayParameter, StringParameter
@@ -47,7 +48,7 @@ class TestParameter(TestCase):
             ByteArrayParameter([0, '1'])
         with self.assertRaises(TypeError):
             ByteArrayParameter([bytes([0, 1, 2, 3]), bytes([4, 5, 6, 7])])
-        with self.assertRaises(TypeError):
+        with self.assertRaises(OverflowError):
             ByteArrayParameter(ndarray(shape=[16], dtype=int8, buffer=array([int8(val) for val in int_data])))
         with self.assertRaises(TypeError):
             ByteArrayParameter(ndarray(shape=[16], dtype=uint16, buffer=array([uint16(val) for val in int_data])))

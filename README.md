@@ -1,3 +1,7 @@
+# YO!
+
+This is a fork and I (ceeesb@gmail.com) killed the mmap / mmap resize dependencies in `trs.py` so that you may use this library on a mac to create trs files. I also fixed the `numpy.bool8` issue so that installing trsfile doesn't pull back the numpy version into the stone age.
+
 # Inspector Trace Set `.trs` file support in Python
 [![Build Status](https://app.travis-ci.com/Riscure/python-trsfile.svg?branch=master)](https://app.travis-ci.com/Riscure/python-trsfile)
 [![Documentation Status](https://readthedocs.org/projects/trsfile/badge/)](https://trsfile.readthedocs.io/)
