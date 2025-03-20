@@ -534,6 +534,8 @@ class TrsEngine(Engine):
 
             if (tag_length & 0x80) != 0:
                 tag_length = int.from_bytes(self.handle.read(tag_length & 0x7F), 'little')
+            if tag_length == 0 and tag != Header.TRACE_BLOCK.value:
+                continue
 
             # Obtain the Value
             tag_value_index = self.handle.tell()
