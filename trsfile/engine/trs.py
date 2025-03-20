@@ -32,9 +32,8 @@ class TrsEngine(Engine):
     | live_update  | Performs live update of the TRS file every N traces. True |
     |              | for updating after every trace and False for never.       |
     +--------------+-----------------------------------------------------------+
-    | padding_mode | Padding mode to use. The supported values are:            |
-    |              | :py:attr:`trsfile.common.TracePadding.NONE` (default)     |
-    |              | :py:attr:`trsfile.common.TracePadding.AUTO`               |
+    | padding_mode | See :py:class:`trsfile.common.TracePadding`.              |
+    |              | Defaults to `TracePadding.AUTO`.                          |
     +--------------+-----------------------------------------------------------+
     """
 
