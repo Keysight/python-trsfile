@@ -1,7 +1,7 @@
 from io import BytesIO
 from unittest import TestCase
 
-from numpy import ndarray, int16, array, int32, int64, single, double, uint8, int8, uint16, bool8
+from numpy import ndarray, int16, array, int32, int64, single, double, uint8, int8, uint16
 
 from trsfile.traceparameter import BooleanArrayParameter, ByteArrayParameter, DoubleArrayParameter, FloatArrayParameter, \
     IntegerArrayParameter, ShortArrayParameter, LongArrayParameter, StringParameter
@@ -13,8 +13,8 @@ class TestParameter(TestCase):
         param1 = BooleanArrayParameter([True, False, True])
         self.assertEqual(serialized_param, param1.serialize())
         self.assertEqual(BooleanArrayParameter.deserialize(BytesIO(serialized_param), 3), param1)
-        param2 = BooleanArrayParameter(ndarray(shape=[3], dtype=bool8,
-                                               buffer=array([bool8(val) for val in [True, False, True]])))
+        param2 = BooleanArrayParameter(ndarray(shape=[3], dtype=bool,
+                                               buffer=array([bool(val) for val in [True, False, True]])))
         self.assertEqual(param1, param2)
 
         with self.assertRaises(TypeError):
@@ -47,10 +47,10 @@ class TestParameter(TestCase):
             ByteArrayParameter([0, '1'])
         with self.assertRaises(TypeError):
             ByteArrayParameter([bytes([0, 1, 2, 3]), bytes([4, 5, 6, 7])])
+        with self.assertRaises(OverflowError):
+            ByteArrayParameter(ndarray(shape=[16], dtype=int8, buffer=array(int_data, dtype=int8)))
         with self.assertRaises(TypeError):
-            ByteArrayParameter(ndarray(shape=[16], dtype=int8, buffer=array([int8(val) for val in int_data])))
-        with self.assertRaises(TypeError):
-            ByteArrayParameter(ndarray(shape=[16], dtype=uint16, buffer=array([uint16(val) for val in int_data])))
+            ByteArrayParameter(ndarray(shape=[16], dtype=uint16, buffer=array(int_data, dtype=uint16)))
         with self.assertRaises(ValueError):
             ByteArrayParameter([])
         with self.assertRaises(ValueError):
