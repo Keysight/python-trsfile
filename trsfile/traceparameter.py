@@ -7,7 +7,6 @@ from enum import Enum
 from io import BytesIO
 from typing import Any
 
-import numpy
 from numpy import ndarray, integer, uint8, double, single
 
 from trsfile.utils import encode_as_short, read_short
@@ -97,7 +96,7 @@ class BooleanArrayParameter(TraceParameter):
         if type(value) is list:
             return all(isinstance(elem, bool) for elem in value)
         elif type(value) is ndarray:
-            return all(isinstance(elem, numpy.bool) for elem in value)
+            return value.dtype == bool
         return False
 
 
