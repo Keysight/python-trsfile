@@ -1,4 +1,5 @@
 import os
+import sys
 import mmap
 import struct
 from typing import List, Union, Dict, Any, Optional
@@ -14,6 +15,56 @@ from trsfile.engine.engine import Engine
 from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
 
 ASCII_LESS_THAN = 0x3C
+
+
+class _FileHandleCompat:
+    """File-backed mmap compatibility layer for macOS."""
+
+    def __init__(self, handle):
+        self._handle = handle
+
+    @property
+    def closed(self):
+        return self._handle.closed
+
+    def size(self):
+        pos = self._handle.tell()
+        self._handle.seek(0, os.SEEK_END)
+        size = self._handle.tell()
+        self._handle.seek(pos)
+        return size
+
+    def resize(self, size):
+        self._handle.truncate(size)
+        self._handle.flush()
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        return self._handle.seek(offset, whence)
+
+    def tell(self):
+        return self._handle.tell()
+
+    def read(self, size=-1):
+        return self._handle.read(size)
+
+    def write(self, data):
+        return self._handle.write(data)
+
+    def flush(self):
+        return self._handle.flush()
+
+    def close(self):
+        return self._handle.close()
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, slice):
+            raise TypeError("slice assignment required")
+        if key.step not in (None, 1):
+            raise ValueError("slice step not supported")
+        pos = self._handle.tell()
+        self._handle.seek(key.start)
+        self._handle.write(value)
+        self._handle.seek(pos)
 
 
 class TrsEngine(Engine):
@@ -65,6 +116,10 @@ class TrsEngine(Engine):
         if self.padding_mode not in [TracePadding.NONE, TracePadding.AUTO]:
             raise ValueError('TrsFile only supports the padding mode NONE and AUTO')
 
+        use_mmap = bool(options.get('use_mmap', True))
+        if sys.platform == "darwin" and mode != 'r':
+            use_mmap = False
+
         # Parse the mode
         if mode == 'r':
             """r = open for reading"""
@@ -75,7 +130,10 @@ class TrsEngine(Engine):
                 raise FileNotFoundError('No TRS file: \'{0:s}\''.format(self.path))
 
             self.file_handle = open(self.path, 'rb')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_READ)
+            if use_mmap:
+                self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_READ)
+            else:
+                self.handle = _FileHandleCompat(self.file_handle)
             self.read_only = True
             self.read_headers = True
 
@@ -91,7 +149,10 @@ class TrsEngine(Engine):
 
             # Now we can open it properly
             self.file_handle = open(self.path, 'r+b')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            if use_mmap:
+                self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            else:
+                self.handle = _FileHandleCompat(self.file_handle)
 
             self.read_only = False
             self.read_headers = False
@@ -110,7 +171,10 @@ class TrsEngine(Engine):
             self.file_handle.close()
 
             self.file_handle = open(self.path, 'r+b')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            if use_mmap:
+                self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            else:
+                self.handle = _FileHandleCompat(self.file_handle)
             self.read_only = False
             self.read_headers = False
 
@@ -137,7 +201,10 @@ class TrsEngine(Engine):
 
             # NOTE: We are using r+b mode because we are essentially updating the file!
             self.file_handle = open(self.path, 'r+b')
-            self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            if use_mmap:
+                self.handle = mmap.mmap(self.file_handle.fileno(), 0, access=mmap.ACCESS_WRITE)
+            else:
+                self.handle = _FileHandleCompat(self.file_handle)
             self.read_only = False
 
         else:
