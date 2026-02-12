@@ -1,9 +1,9 @@
 # Change CI/CD pipeline service provider
 
 * Status:
-    * [x] proposed
+    * [ ] proposed
     * [ ] rejected
-    * [ ] accepted
+    * [x] accepted
     * [ ] deprecated
     * [ ] superseded by ...
 
@@ -61,5 +61,9 @@ Chosen option: "Github Actions", because
 * Good, because all in one platform (code repo, project management, CI/CD, package repos)
 * Bad, because we do not want to switch code repos at the moment
     * Yes there are ways to use a gitlab pipeline with a github repo, but why bother?
+
+## Resolution
+
+We went with Github Actions.
 
 <!-- markdownlint-disable-file MD013 -->
