@@ -1,6 +1,53 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+requires = [
+  "setuptools>=69",
+  "setuptools_scm[toml]>=8",
+  "wheel"
+]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "trsfile"
+description = "Library to read and create Inspector trace set files (.trs)"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+dynamic = ["version"]
+keywords = ["trs", "trace", "traceset", "trace set", "oscilloscope", "test and measurement"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: BSD License",
+  "Topic :: Utilities",
+  "Operating System :: OS Independent"
+]
+maintainers = [
+  { name = "Riscure", email = "inforequest@riscure.com" }
+]
+dependencies = [
+  "numpy>=1.24,<3"
+]
+
+[project.optional-dependencies]
+DEV = [
+  "sphinx",
+  "sphinx-autobuild",
+  "sphinx_rtd_theme",
+  "m2r2"
+]
+
+[project.urls]
+Homepage = "https://trsfile.readthedocs.io/en/latest"
+Documentation = "https://trsfile.readthedocs.io/en/latest"
+Repository = "https://github.com/keysight/python-trsfile"
+Issues = "https://github.com/keysight/python-trsfile/issues"
+
+[tool.setuptools]
+# Keep this true if you rely on MANIFEST.in or auto-inclusion of package data
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["trsfile", "trsfile.*"]
+
 [tool.setuptools_scm]
+# This writes the computed version into the package at build time
 write_to = "trsfile/VERSION.txt"
