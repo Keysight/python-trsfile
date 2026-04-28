@@ -210,7 +210,7 @@ class TestCreation(unittest.TestCase):
         with self.assertRaises(ValueError):
             print(trs_traces)
 
-    def test_write_different_trace_sizes(self):
+    def test_write_different_trace_sizes2(self):
         trace_count = 100
         sample_count = 1000
 
