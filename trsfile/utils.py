@@ -23,6 +23,6 @@ def read_short(io_bytes: BytesIO):
 
 class StringKeyOrderedDict(OrderedDict):
     def __setitem__(self, key, value):
-        if not type(key) is str:
+        if not isinstance(key, str):
             raise TypeError('The key for an item in a {} must be of type \'str\'.'.format(self.__class__.__name__))
         super().__setitem__(key, value)
