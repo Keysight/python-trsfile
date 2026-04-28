@@ -5,13 +5,32 @@ import warnings
 from typing import Any, Union, List, Dict
 
 from trsfile.compatibility import alias, aliased
-from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
-from trsfile.traceparameter import TraceSetParameter, TraceParameter, TraceParameterDefinition, ParameterType, \
-    BooleanArrayParameter, ByteArrayParameter, StringParameter, DoubleArrayParameter, IntegerArrayParameter, \
-    LongArrayParameter, ShortArrayParameter
-from trsfile.utils import *
+from trsfile.standardparameters import (
+    StandardTraceParameters,
+    StandardTraceSetParameters,
+)
+from trsfile.traceparameter import (
+    BooleanArrayParameter,
+    ByteArrayParameter,
+    DoubleArrayParameter,
+    IntegerArrayParameter,
+    LongArrayParameter,
+    ParameterType,
+    ShortArrayParameter,
+    StringParameter,
+    TraceParameter,
+    TraceParameterDefinition,
+    TraceSetParameter,
+)
+from trsfile.utils import (
+    encode_as_short,
+    read_parameter_name,
+    read_short,
+    StringKeyOrderedDict,
+    UTF_8,
+)
+from io import BytesIO
 
-UTF_8 = 'utf-8'
 SHORT_MIN = -2**15
 SHORT_MAX = 2**15-1
 INT_MIN = -2**31
