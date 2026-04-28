@@ -316,7 +316,7 @@ class TestCreation(unittest.TestCase):
 
     def test_read_non_existing(self):
         with self.assertRaises(FileNotFoundError):
-            with trsfile.open(self.tmp_path, 'r') as trs_traces:
+            with trsfile.open(self.tmp_path, 'r'):
                 pass
 
     def test_append(self):
