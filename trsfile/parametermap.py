@@ -2,10 +2,12 @@ from __future__ import annotations
 import copy
 import numbers
 import warnings
-from typing import Any, Union, List, Dict
+from typing import Any, Union, List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from trsfile.common import Header
 
 from trsfile.compatibility import alias, aliased
-from trsfile.common import Header
 from trsfile.standardparameters import (
     StandardTraceParameters,
     StandardTraceSetParameters,
@@ -258,7 +260,7 @@ class TraceSetParameterMap(LockableDict):
         self[std_trace_set_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
         return self
 
-    def fill_from_headers(self, headers: Dict[Header, Any]) -> TraceSetParameterMap:
+    def fill_from_headers(self, headers: Dict["Header", Any]) -> TraceSetParameterMap:
         """Add to this trace set parameter map all data that is in the header
         and for which standard trace set parameters exist.
         Data that already exists in the map will not be overwritten.
