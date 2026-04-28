@@ -7,8 +7,8 @@ from typing import Any
 from chipwhisperer.common.api.ProjectFormat import Project
 
 from trsfile import TraceSet, Header, TracePadding, Trace, SampleCoding
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
-from trsfile.traceparameter import TraceParameterDefinition, ParameterType, StringParameter, ByteArrayParameter
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterMap
+from trsfile.traceparameter import StringParameter, ByteArrayParameter
 
 
 def to_trs(path_to_project: str, output_path: str, trace_index: int = 0):
