@@ -1,8 +1,28 @@
 from unittest import TestCase
 
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap, RawTraceData
-from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
-from trsfile.traceparameter import *
+from trsfile.parametermap import (
+    RawTraceData,
+    TraceParameterDefinitionMap,
+    TraceParameterMap,
+    TraceSetParameterMap,
+)
+from trsfile.standardparameters import (
+    StandardTraceParameters,
+    StandardTraceSetParameters,
+)
+from trsfile.traceparameter import (
+    BooleanArrayParameter,
+    ByteArrayParameter,
+    DoubleArrayParameter,
+    FloatArrayParameter,
+    IntegerArrayParameter,
+    LongArrayParameter,
+    ParameterType,
+    ShortArrayParameter,
+    StringParameter,
+    TraceParameterDefinition,
+)
+from io import BytesIO
 
 
 class TestTraceSetParameterMap(TestCase):
