@@ -461,7 +461,7 @@ class TrsEngine(Engine):
 
         # Add any mandatory headers that are missing
         for header in Header.get_mandatory():
-            if not header in self.headers:
+            if header not in self.headers:
                 self.headers[header] = header.default
 
         # Make sure correct trs version is set
