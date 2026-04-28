@@ -139,7 +139,7 @@ class ParameterMapUtil:
         """Get the subclass of TraceParameter needed to hold a given value
         Throws an error if the value cannot be stored in any TraceParameter subclass"""
         value_type = ParameterMapUtil._get_type(param_value)
-        if value_type == list:
+        if value_type is list:
             value_type = ParameterMapUtil._get_type_of_list_elems(param_value)
         return ParameterMapUtil.TYPE_TO_PARAMETER[value_type]
 
