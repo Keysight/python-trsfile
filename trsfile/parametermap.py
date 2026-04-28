@@ -264,7 +264,7 @@ class TraceSetParameterMap(LockableDict):
         for _ in range(number_of_entries):
             name = read_parameter_name(raw)
             value = TraceSetParameter.deserialize(raw)
-            result[name] = value
+            StringKeyOrderedDict.__setitem__(result, name, value)
         return result
 
     def serialize(self) -> bytes:
@@ -474,7 +474,7 @@ class TraceParameterMap(StringKeyOrderedDict):
         for key, val in definitions.items():
             io_bytes.seek(val.offset)
             param = val.param_type.param_class.deserialize(io_bytes, val.length)
-            result[key] = param
+            StringKeyOrderedDict.__setitem__(result, key, param)
         return result
 
     def serialize(self) -> bytearray:
