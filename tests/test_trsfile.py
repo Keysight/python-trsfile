@@ -32,10 +32,10 @@ class TestTrsFile(unittest.TestCase):
 
 	def test_read_only(self):
 		"""Check if the TrsFile is read only"""
-		with self.assertRaises(TypeError) as cm:
+		with self.assertRaises(TypeError):
 			self.trs_file[0] = None
 
-		with self.assertRaises(TypeError) as cm:
+		with self.assertRaises(TypeError):
 			del self.trs_file[0]
 
 	def test_slice(self):
