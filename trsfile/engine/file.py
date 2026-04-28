@@ -75,7 +75,7 @@ class FileEngine(Engine):
 				try:
 					while self.path.is_dir():
 						time.sleep(0.001)
-				except:
+				except Exception:
 					pass
 
 			# Create the temporary folder and initialize this class
