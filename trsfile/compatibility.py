@@ -10,7 +10,7 @@ class alias:
         self.aliases = set(aliases)
 
     def __call__(self, obj):
-        if type(obj) == property:
+        if isinstance(obj, property):
             obj.fget._aliases = self.aliases
         else:
             obj._aliases = self.aliases
@@ -34,7 +34,7 @@ def aliased(aliased_class):
     for name, method in aliased_class_dict.items():
         aliases = None
 
-        if (type(method) == property) and hasattr(method.fget, '_aliases'):
+        if isinstance(method, property) and hasattr(method.fget, '_aliases'):
             aliases = method.fget._aliases
         elif hasattr(method, '_aliases'):
             aliases = method._aliases

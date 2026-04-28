@@ -75,7 +75,7 @@ class FileEngine(Engine):
 				try:
 					while self.path.is_dir():
 						time.sleep(0.001)
-				except:
+				except Exception:
 					pass
 
 			# Create the temporary folder and initialize this class
@@ -124,7 +124,7 @@ class FileEngine(Engine):
 
 		# Add any mandatory headers that are missing
 		for header in Header.get_mandatory():
-			if not header in headers:
+			if header not in headers:
 				headers[header] = header.default
 
 		# Store these default headers

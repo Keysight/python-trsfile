@@ -210,7 +210,7 @@ class TestCreation(unittest.TestCase):
         with self.assertRaises(ValueError):
             print(trs_traces)
 
-    def test_write_different_trace_sizes(self):
+    def test_write_different_trace_sizes2(self):
         trace_count = 100
         sample_count = 1000
 
@@ -316,7 +316,7 @@ class TestCreation(unittest.TestCase):
 
     def test_read_non_existing(self):
         with self.assertRaises(FileNotFoundError):
-            with trsfile.open(self.tmp_path, 'r') as trs_traces:
+            with trsfile.open(self.tmp_path, 'r'):
                 pass
 
     def test_append(self):

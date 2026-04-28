@@ -7,8 +7,8 @@ from typing import Any
 from chipwhisperer.common.api.ProjectFormat import Project
 
 from trsfile import TraceSet, Header, TracePadding, Trace, SampleCoding
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
-from trsfile.traceparameter import TraceParameterDefinition, ParameterType, StringParameter, ByteArrayParameter
+from trsfile.parametermap import TraceSetParameterMap, TraceParameterMap
+from trsfile.traceparameter import StringParameter, ByteArrayParameter
 
 
 def to_trs(path_to_project: str, output_path: str, trace_index: int = 0):
@@ -37,7 +37,7 @@ def to_trs(path_to_project: str, output_path: str, trace_index: int = 0):
         extra_parameters = CWSettings.read(
             os.path.join(trace_folder, container.config.attr('prefix') + 'settings.cwset'))
         traceset_parameters.update(extra_parameters)
-    except:
+    except Exception:
         print('Warning: Failed to read additional settings. Trace reading will continue without additional settings.')
 
     with TraceSet(path=output_path,
@@ -58,7 +58,7 @@ def to_trs(path_to_project: str, output_path: str, trace_index: int = 0):
 def read_or_default(config, attr: str, default: Any = ''):
     try:
         return config.attr(attr)
-    except:
+    except Exception:
         return default
 
 

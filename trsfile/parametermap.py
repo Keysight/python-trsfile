@@ -2,16 +2,38 @@ from __future__ import annotations
 import copy
 import numbers
 import warnings
-from typing import Any, Union, List, Dict
+from typing import Any, Union, List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from trsfile.common import Header
 
 from trsfile.compatibility import alias, aliased
-from trsfile.standardparameters import StandardTraceSetParameters, StandardTraceParameters
-from trsfile.traceparameter import TraceSetParameter, TraceParameter, TraceParameterDefinition, ParameterType, \
-    BooleanArrayParameter, ByteArrayParameter, StringParameter, DoubleArrayParameter, IntegerArrayParameter, \
-    LongArrayParameter, ShortArrayParameter
-from trsfile.utils import *
+from trsfile.standardparameters import (
+    StandardTraceParameters,
+    StandardTraceSetParameters,
+)
+from trsfile.traceparameter import (
+    BooleanArrayParameter,
+    ByteArrayParameter,
+    DoubleArrayParameter,
+    IntegerArrayParameter,
+    LongArrayParameter,
+    ParameterType,
+    ShortArrayParameter,
+    StringParameter,
+    TraceParameter,
+    TraceParameterDefinition,
+    TraceSetParameter,
+)
+from trsfile.utils import (
+    encode_as_short,
+    read_parameter_name,
+    read_short,
+    StringKeyOrderedDict,
+    UTF_8,
+)
+from io import BytesIO
 
-UTF_8 = 'utf-8'
 SHORT_MIN = -2**15
 SHORT_MAX = 2**15-1
 INT_MIN = -2**31
@@ -120,7 +142,7 @@ class ParameterMapUtil:
         """Get the subclass of TraceParameter needed to hold a given value
         Throws an error if the value cannot be stored in any TraceParameter subclass"""
         value_type = ParameterMapUtil._get_type(param_value)
-        if value_type == list:
+        if value_type is list:
             value_type = ParameterMapUtil._get_type_of_list_elems(param_value)
         return ParameterMapUtil.TYPE_TO_PARAMETER[value_type]
 
@@ -238,7 +260,7 @@ class TraceSetParameterMap(LockableDict):
         self[std_trace_set_param.identifier] = typed_param(ParameterMapUtil.to_list_if_listable(value))
         return self
 
-    def fill_from_headers(self, headers: Dict['Header', Any]) -> TraceSetParameterMap:
+    def fill_from_headers(self, headers: Dict["Header", Any]) -> TraceSetParameterMap:
         """Add to this trace set parameter map all data that is in the header
         and for which standard trace set parameters exist.
         Data that already exists in the map will not be overwritten.
