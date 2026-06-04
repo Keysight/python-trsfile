@@ -1,16 +1,30 @@
-import os
-import trsfile
-import time
-import tempfile
-import unittest
 import math
+import os
 import shutil
+import tempfile
+import time
+import unittest
 
-from trsfile import Trace, SampleCoding, Header, TracePadding
-from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap, TraceSetParameterMap, RawTraceData
+import numpy
+
+import trsfile
+from trsfile import Header, SampleCoding, Trace, TracePadding
+from trsfile.parametermap import (
+    RawTraceData,
+    TraceParameterDefinitionMap,
+    TraceParameterMap,
+    TraceSetParameterMap,
+)
 from trsfile.standardparameters import StandardTraceSetParameters
-from trsfile.traceparameter import ByteArrayParameter, TraceParameterDefinition, ParameterType, StringParameter, \
-    IntegerArrayParameter, BooleanArrayParameter, FloatArrayParameter
+from trsfile.traceparameter import (
+    BooleanArrayParameter,
+    ByteArrayParameter,
+    FloatArrayParameter,
+    IntegerArrayParameter,
+    ParameterType,
+    StringParameter,
+    TraceParameterDefinition,
+)
 
 
 def get_sample(x):
@@ -526,6 +540,87 @@ class TestCreation(unittest.TestCase):
                 # Test that this is indeed not zero
                 self.assertNotEqual(trs_trace[-i - 1], 0)
 
+    def __metadata_test(
+        self, headers: dict[Header, object], expect_overflow: bool = False
+    ) -> None:
+        key = "MY_IMPORTANT_ATTRIBUTE"
+        headers[Header.TRACE_PARAMETER_DEFINITIONS] = TraceParameterDefinitionMap(
+            {key: TraceParameterDefinition(ParameterType.BYTE, length=4, offset=0)}
+        )
+        sample_count = 1
+        trace_count = 1
+        if expect_overflow:
+            ctx: object = self.assertRaises(OverflowError).__enter__()
+        else:
+            ctx = None
+        try:
+            with trsfile.open(
+                self.tmp_path, "w", headers=headers, padding_mode=TracePadding.AUTO
+            ) as fp:
+                fp.extend(
+                    [
+                        Trace(
+                            SampleCoding.FLOAT,
+                            [0] * sample_count,
+                            TraceParameterMap(
+                                {
+                                    key: ByteArrayParameter(
+                                        numpy.array([1, 2, 3, 4], dtype=numpy.uint8)
+                                    )
+                                }
+                            ),
+                        )
+                        for i in range(0, trace_count)
+                    ]
+                )
+        except BaseException as ex:
+            if ctx:
+                ctx.__exit__(type(ex), ex, None)
+            else:
+                raise
+        else:
+            if ctx:
+                ctx.__exit__(None, None, None)
+
+    def test_negative_signed_integers_in_metadata(self):
+        """Ensure that negative values are two's-complement (and 32-bits)."""
+        self.__metadata_test(
+            {
+                Header.DESCRIPTION: "hello there, general kenobi",
+                Header.ACQUISITION_DEVICE_ID: "Super Ultra Mega Scope",
+                Header.ACQUISITION_INPUT_IMPEDANCE: -5.0,
+                Header.OFFSET_X: -10000,
+                Header.EXTERNAL_CLOCK_MULTIPLIER: -1,
+                Header.EXTERNAL_CLOCK_PHASE_SHIFT: -35000,
+            }
+        )
+
+    def test_datalength_is_uint16(self):
+        """Ensure shorts are unsigned"""
+        self.__metadata_test(
+            {
+                # (1<<16) - 1 fits in a uint16
+                Header.LENGTH_DATA: (1 << 16) - 1,
+            }
+        )
+
+    def test_throws_overflow_if_datalength_does_not_fit(self):
+        self.__metadata_test(
+            {
+                # (1<<16) does NOT fit in a uint16
+                Header.LENGTH_DATA: (1 << 16),
+            },
+            expect_overflow=True,
+        )
+
+    def test_titlespace_is_uint8(self):
+        """Ensure bytes are unsigned"""
+        self.__metadata_test(
+            {
+                # (1<<8)-1 fits in a uint18
+                Header.TITLE_SPACE: (1 << 8) - 1,
+            }
+        )
 
 if __name__ == '__main__':
     unittest.main()
