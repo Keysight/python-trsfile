@@ -29,10 +29,12 @@ dependencies = [
 
 [project.optional-dependencies]
 DEV = [
+  "m2r2",
+  "numpy",
+  "ruff",
   "sphinx",
   "sphinx-autobuild",
   "sphinx_rtd_theme",
-  "m2r2"
 ]
 
 [project.urls]

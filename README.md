@@ -195,18 +195,27 @@ with \
 ```
 
 ## Documentation
+
 The full documentation is available in the `docs` folder with a readable version on [Read the Docs](https://trsfile.readthedocs.io/).
 
 ## Contributing
 
-### Testing
-The library supports Python `unittest` module and the tests can be executed with the following command:
-```
-python -m unittest
+Anyone is free to open a pull request.
+
+### Testing / Developing
+
+The library has tests and a linter has been set up for it. Both can be run with the following command:
+
+```sh
+nox
 ```
 
+Install the `nox` executable (in a virtual environment) using `python -m pip install -r ./requirements.txt`.
+
 ### Creating Releases
+
 We use Github Actions to publish packages to PYPy. Read the [Github docs on how to create a new release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) and trigger the publishing workflow:
 
 ## License
+
 [BSD 3-Clause Clear License](https://choosealicense.com/licenses/bsd-3-clause-clear/)
