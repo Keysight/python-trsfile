@@ -214,8 +214,17 @@ Install the `nox` executable (in a virtual environment) using `python -m pip ins
 
 ### Creating Releases
 
-We use Github Actions to publish packages to PYPy. Read the [Github docs on how to create a new release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) and trigger the publishing workflow:
+We use Github Actions to publish packages to PyPI. The action triggers when a Github Release is made public.
+
+How to create a release:
+
+1. Go to this page: https://github.com/Keysight/python-trsfile/releases
+2. Click on "Draft a new release".
+3. Click on "Tag: Select tag".
+4. Click on "create new tag".
+5. Use [Semantic Versioning](https://semver.org) rules to choose the new version. Do not use a `v` prefix for the new git tag. *Note*: it is _not necessary_ to increase a version number anywhere in the source code repository. The version is deduced automatically from the latest git tag.
+6. When publishing the draft, the action is triggered. This action publishes the release to PyPI.
 
 ## License
 
-[BSD 3-Clause Clear License](https://choosealicense.com/licenses/bsd-3-clause-clear/)
+See the LICENSE file in this repository.

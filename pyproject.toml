@@ -10,13 +10,13 @@ build-backend = "setuptools.build_meta"
 name = "trsfile"
 description = "Library to read and create Inspector trace set files (.trs)"
 readme = { file = "README.md", content-type = "text/markdown" }
-license = { file = "LICENSE" }
+license-files = ["LICENSE"]
+license = "BSD-3-Clause"
 dynamic = ["version"]
 keywords = ["trs", "trace", "traceset", "trace set", "oscilloscope", "test and measurement"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: BSD License",
   "Topic :: Utilities",
   "Operating System :: OS Independent"
 ]
@@ -31,10 +31,11 @@ dependencies = [
 DEV = [
   "m2r2",
   "numpy",
+  "pyproject",
   "ruff",
   "sphinx",
   "sphinx-autobuild",
-  "sphinx_rtd_theme",
+  "sphinx-rtd-theme",
 ]
 
 [project.urls]

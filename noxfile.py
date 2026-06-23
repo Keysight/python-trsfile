@@ -9,3 +9,4 @@ def lint(session: nox.Session) -> None:
     session.install("-e", ".")
     session.run("ruff", "check")
     session.run("python", "-m", "unittest", "discover")
+    session.run("pyproject", "check")
