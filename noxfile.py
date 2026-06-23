@@ -5,7 +5,9 @@ import sys
 
 @nox.session(reuse_venv=True)
 def lint(session: nox.Session) -> None:
-    requirements = nox.project.load_toml("pyproject.toml")["project"]["optional-dependencies"]["DEV"]
+    requirements = nox.project.load_toml("pyproject.toml")["project"][
+        "optional-dependencies"
+    ]["DEV"]
     if not isinstance(requirements, list):
         raise RuntimeError("expected requirements to be a list")
     if sys.version_info < (3, 12, 0):
@@ -16,3 +18,9 @@ def lint(session: nox.Session) -> None:
     session.run("python", "-m", "unittest", "discover")
     if sys.version_info >= (3, 12, 0):
         session.run("pyproject", "check")
+    else:
+        session.log(
+            "The `pyproject` linter didn't run, because the minimal python version for this linter is 3.12. The current interpreter version is {}".format(
+                sys.version_info
+            )
+        )
