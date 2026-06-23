@@ -1,18 +1,22 @@
-import os
-import sys
+import copy
 import mmap
+import os
 import struct
-from typing import List, Union, Dict, Any, Optional
+import sys
+from io import BytesIO
+from typing import Any, Dict, List, Optional, Union
 
 import numpy
-import copy
 
-from io import BytesIO
-from trsfile.trace import Trace
-from trsfile.traceparameter import ByteArrayParameter
 from trsfile.common import Header, SampleCoding, TracePadding
 from trsfile.engine.engine import Engine
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterDefinitionMap, TraceParameterMap
+from trsfile.parametermap import (
+    TraceParameterDefinitionMap,
+    TraceParameterMap,
+    TraceSetParameterMap,
+)
+from trsfile.trace import Trace
+from trsfile.traceparameter import ByteArrayParameter
 
 ASCII_LESS_THAN = 0x3C
 
@@ -512,7 +516,8 @@ class TrsEngine(Engine):
 
             # Obtain the tag value
             if header.type is int:
-                tag_value = b'\xff' * header.length if value is None else value.to_bytes(header.length, 'little')
+                # Note the delicacy with the signedness here.
+                tag_value = b'\xff' * header.length if value is None else value.to_bytes(header.length, byteorder='little', signed=header.length >= 4)
             elif header.type is float:
                 tag_value = struct.pack('<f', 0.0 if value is None else value)
             elif header.type is bool:
@@ -520,7 +525,7 @@ class TrsEngine(Engine):
             elif header.type is str:
                 tag_value = value.encode('utf-8')
             elif header.type is SampleCoding:
-                tag_value = b'\xff' if value is None else value.value.to_bytes(1, 'little')
+                tag_value = b'\xff' if value is None else value.value.to_bytes(1, byteorder='little', signed=False)
             elif header.type is bytes:
                 tag_value = value
             elif header.type is TraceSetParameterMap:
@@ -551,7 +556,7 @@ class TrsEngine(Engine):
                 tag = [header.value]
                 if tag_length >= 0x80:
                     tag_length_length = (tag_length.bit_length() // 8) + (1 if tag_length.bit_length() % 8 > 0 else 0)
-                    tag += bytes([0x80 | tag_length_length]) + tag_length.to_bytes(tag_length_length, 'little')
+                    tag += bytes([0x80 | tag_length_length]) + tag_length.to_bytes(tag_length_length, byteorder='little', signed=tag_length_length >= 4)
                 else:
                     tag += [tag_length]
                 tag += tag_value
@@ -599,7 +604,8 @@ class TrsEngine(Engine):
             tag_length = self.handle.read(1)[0]
 
             if (tag_length & 0x80) != 0:
-                tag_length = int.from_bytes(self.handle.read(tag_length & 0x7F), 'little')
+                tag_length &= 0x7F
+                tag_length = int.from_bytes(self.handle.read(tag_length), byteorder='little', signed=tag_length >= 4)
             if tag_length == 0 and tag != Header.TRACE_BLOCK.value:
                 continue
 
@@ -612,7 +618,7 @@ class TrsEngine(Engine):
             if Header.has_value(tag):
                 header = Header(tag)
                 if header.type is int:
-                    tag_value = int.from_bytes(tag_value, 'little')
+                    tag_value = int.from_bytes(tag_value, byteorder='little', signed=tag_length >= 4)
                 elif header.type is float:
                     tag_value, = struct.unpack('<f', tag_value)
                 elif header.type is bool:
